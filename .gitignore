@@ -1,0 +1,14 @@
+# 不上公開 repo 的內容（PROJECT.md §3 D18）
+docs/
+sources/
+PROJECT.md
+assets/raw/
+tools/__pycache__/
+*.docx
+*.xlsx
+.env
+*.secret*
+.DS_Store
+Thumbs.db
+desktop.ini
+.claude/
