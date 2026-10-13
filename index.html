@@ -2,74 +2,44 @@
 <html lang="zh-Hant-TW">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Kai · 板橋 2026｜網站即將上線</title>
-  <meta name="description" content="Kai · 板橋 2026 — 網站即將上線 / Coming soon">
-  <meta property="og:title" content="Kai · 板橋 2026">
-  <meta property="og:description" content="網站即將上線 / Coming soon">
-
-  <!--
-    LATER: to send visitors (and every printed QR code) somewhere else,
-    uncomment the line below and replace the URL. Nothing else needs to change.
-  -->
-  <!-- <meta http-equiv="refresh" content="0; url=https://example.com/"> -->
-
-  <style>
-    :root {
-      --bg: #f7f5f0;
-      --ink: #1d2433;
-      --muted: #5c6475;
-      --accent: #c8102e;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root { --bg: #14171f; --ink: #f1f2f5; --muted: #a3a9b6; --accent: #ff5a6e; }
-    }
-    * { box-sizing: border-box; margin: 0; }
-    html, body { height: 100%; }
-    body {
-      background: var(--bg);
-      color: var(--ink);
-      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
-      display: grid;
-      place-items: center;
-      padding: 24px 16px;
-      text-align: center;
-    }
-    main { max-width: 560px; }
-    .tag {
-      display: inline-block;
-      font-size: 0.85rem;
-      letter-spacing: 0.15em;
-      color: var(--accent);
-      border: 1.5px solid var(--accent);
-      border-radius: 999px;
-      padding: 4px 14px;
-      margin-bottom: 28px;
-    }
-    h1 {
-      font-size: clamp(2.6rem, 11vw, 4.5rem);
-      line-height: 1.05;
-      font-weight: 800;
-      letter-spacing: -0.01em;
-    }
-    h1 span { color: var(--accent); }
-    .rule {
-      width: 56px; height: 4px;
-      background: var(--accent);
-      border-radius: 2px;
-      margin: 28px auto;
-    }
-    p.zh { font-size: 1.35rem; font-weight: 600; }
-    p.en { margin-top: 6px; color: var(--muted); font-size: 1rem; letter-spacing: 0.04em; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>鄧凱勛｜板橋新戰力　年輕行動力</title>
+  <meta name="description" content="國民黨板橋區市議員參選人鄧凱勛的虛擬服務處，看政見、行程，跟 AI 助理聊聊。">
+  <meta property="og:title" content="鄧凱勛｜板橋新戰力　年輕行動力">
+  <meta property="og:description" content="國民黨板橋區市議員參選人鄧凱勛的虛擬服務處，看政見、行程，跟 AI 助理聊聊。">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#23252E">
+  <link rel="icon" href="data:,">
+  <link rel="preload" href="assets/fonts/Cubic_11.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="js/main.js"></script>
 </head>
 <body>
-  <main>
-    <div class="tag">2026</div>
-    <h1>Kai<br><span>板橋</span></h1>
-    <div class="rule"></div>
-    <p class="zh">網站即將上線，敬請期待</p>
-    <p class="en">Coming soon</p>
+  <main id="stage">
+    <h1 class="sr-only">鄧凱勛板橋服務處</h1>
+    <div id="scene"></div>
   </main>
+  <div id="hud"></div>
+
+  <div id="loader" role="status">
+    <p>載入中…</p>
+    <div class="loader-track"><div class="loader-bar"></div></div>
+  </div>
+
+  <dialog id="modal" aria-labelledby="modal-title">
+    <div class="modal-frame">
+      <header class="modal-head">
+        <div>
+          <h2 class="modal-title" id="modal-title" tabindex="-1"></h2>
+          <p class="modal-sub" hidden></p>
+        </div>
+        <button type="button" class="modal-close" aria-label="關閉">✕</button>
+      </header>
+      <div class="modal-body"></div>
+      <footer class="modal-foot" hidden></footer>
+    </div>
+  </dialog>
+
+  <noscript><p class="noscript">這個網站需要開啟 JavaScript。</p></noscript>
 </body>
 </html>
