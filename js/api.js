@@ -64,6 +64,11 @@ export function chat(message, history) {
   return post({ action: 'chat', client: clientId(), message, history }, 40000);
 }
 
+// 留言板（D74）：後台一律回 {ok:true}；太頻繁回 {error:'busy'}
+export function message(name, text) {
+  return post({ action: 'message', client: clientId(), name, text }, 40000);
+}
+
 // 每個瀏覽器一個隨機 ID；讀不到 localStorage 就每次新產生
 export function clientId() {
   const make = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));

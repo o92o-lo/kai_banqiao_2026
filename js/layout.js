@@ -19,6 +19,7 @@ export const HOTSPOTS = [
   { id: 'cup', action: 'tea:cup', label: '喝杯茶吧', ariaLabel: '茶杯' },
   { id: 'cup2', action: 'tea:cup', label: '喝杯茶吧', ariaLabel: '茶杯' },
   { id: 'snack', action: 'tea:snack', label: '吃些點心', ariaLabel: '點心' }, // D60
+  { id: 'guestbook', action: 'guestbook', label: '留言給凱勛', ariaLabel: '茶桌上的簽名簿：留言給凱勛、看鄉親的期待' }, // D74
   { id: 'kid', action: 'kid', label: '一起玩積木', ariaLabel: '小孩：一起玩積木（親子友善政見）' },
   { id: 'flowers', action: 'flower', label: '送花籃祝福凱勛', ariaLabel: '花籃區：送花籃祝福凱勛', arrow: true },
   { id: 'flyers', action: 'downloads', label: '下載文宣', ariaLabel: '歡迎桌文宣：下載文宣', arrow: true },
@@ -43,6 +44,7 @@ export const SCENES = {
       cup:         { x: 39.8, y: 63.3, w: 3.5, h: 5.2 },
       cup2:        { x: 53.2, y: 58.6, w: 3.5, h: 5.0 },
       snack:       { x: 48.4, y: 63.5, w: 5.1, h: 6.0 },
+      guestbook:   { x: 53.7, y: 64.1, w: 6.9, h: 8.7 }, // 比簽名簿圖大一圈，不碰 snack、cup2
       kid:         { x: 31.6, y: 35.2, w: 8.0, h: 20.2 },
       flowers:     { x: 0.5, y: 22.9, w: 16.9, h: 56.9 },
       flyers:      { x: 3.5, y: 79.0, w: 18.5, h: 10.0 },
@@ -76,6 +78,7 @@ export const SCENES = {
     blessCard: { x: 25, y: 76 }, // 祝福卡錨點（卡片底邊中點）：花籃區右側地板
     // 疊在場景上的角色圖（P0 沒畫或要換掉的）。talk＝開聊天時換的圖
     overlays: {
+      guestbook: { src: 'assets/scene/guestbook.png', x: 54.0, y: 65.0, w: 6.0 }, // D74：茶桌上、點心盤右邊
       cat: { src: 'assets/scene/cat.png', x: 82.0, y: 70.5, w: 7.3 },
       kid: { src: 'assets/scene/kid.png', x: 31.6, y: 35.2, w: 8.0 }, // D64：背板左側盆栽前、盆栽底部與茶桌左側椅子之間
       // 小賴（D46）：蓋住 P0 原本的小賴，下緣切齊茶桌桌面（y 58.3%）
@@ -119,7 +122,7 @@ export const TOOLBAR = [
   { action: 'vote', text: '投票資訊', icon: 'obj-numbersign' },
   { action: 'lai', text: '跟小賴聊', icon: 'lai' },
   { action: 'flower', text: '送花籃', icon: 'obj-flower-a' },
-  { action: 'downloads', text: '文宣', icon: 'obj-flyers' },
+  { action: 'guestbook', text: '留言', icon: 'assets/scene/guestbook.png' }, // D74：文宣改放進目錄
 ];
 
 // Sheet「網站設定」沒填時的預設值

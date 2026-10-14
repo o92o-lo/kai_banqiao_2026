@@ -13,6 +13,7 @@ import { openChat } from './chat.js';
 import { openTalk } from './zones/characters.js';
 import { nextBlessing, markSent, postFlowerInBackground, canSend, TOO_FAST, blessingCard, renderFlowerSign } from './zones/flowers.js';
 import { openDownloads } from './zones/welcome.js';
+import { openGuestbook } from './zones/guestbook.js';
 
 const bar = document.querySelector('.loader-bar');
 
@@ -83,6 +84,7 @@ function makeHandler(data) {
         return;
       }
       case 'downloads': return openDownloads(data);
+      case 'guestbook': return openGuestbook(data);
       case 'catalog': return openCatalog(data);
     }
   };

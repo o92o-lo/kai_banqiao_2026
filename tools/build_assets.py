@@ -233,6 +233,14 @@ def build_nolai():
     print(f"scene-p0nolai: {img.size}  webp {sw_ // KB}KB  jpg {sj // KB}KB")
 
 
+def build_guestbook():
+    """D74：茶桌上的簽名簿（綠幕去背），寬 240px（場景裡約 6% 寬）。"""
+    img = crop_alpha(key_green(Image.open(RAW / "obj-guestbook.jpg")))
+    img = img.resize((240, round(img.height * 240 / img.width)), Image.LANCZOS)
+    s = save_png(img, OUT / "guestbook.png")
+    print(f"guestbook: {img.size} {s // KB}KB")
+
+
 def build_icons():
     """D73：分頁圖示（32×32）與 iPhone 主畫面圖示（180×180，實心底色，iOS 不支援透明）。"""
     face = Image.open(OUT / "lai-face.png").convert("RGBA")
@@ -246,7 +254,7 @@ def build_icons():
 TASKS = {
     "scene": build_scene, "policyboard": build_policyboard, "cover": build_cover,
     "photo": build_photo, "flowers": build_flowers, "chars": build_chars,
-    "lai": build_lai, "boardinner": build_board_inner, "nolai": build_nolai, "icons": build_icons,
+    "lai": build_lai, "boardinner": build_board_inner, "nolai": build_nolai, "icons": build_icons, "guestbook": build_guestbook,
 }
 
 if __name__ == "__main__":

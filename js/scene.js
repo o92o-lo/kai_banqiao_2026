@@ -100,7 +100,7 @@ function addLongPress(btn) {
 function toolIcon(icon) {
   if (icon === 'lai') return h('span', { class: 'tool-ico lai-face', 'aria-hidden': 'true' });
   const el = h('span', { class: 'tool-ico', 'aria-hidden': 'true' });
-  el.style.backgroundImage = `url(assets/sprites/${icon}.png)`;
+  el.style.backgroundImage = `url(${icon.includes('/') ? icon : `assets/sprites/${icon}.png`})`;
   return el;
 }
 
