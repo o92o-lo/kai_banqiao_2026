@@ -1,6 +1,5 @@
-// 大茶桌：小賴（Sprint 1 先放常見問題，AI 對話 Sprint 3）；茶杯、點心趣味文字
+// 大茶桌：茶杯、點心趣味文字；常見問題清單（目錄模式用）。小賴對話在 js/chat.js
 import { h, pick } from '../util.js';
-import { openModal } from '../modal.js';
 
 export function faqContent(data, { buttons = true } = {}) {
   const faq = data.faq || [];
@@ -22,16 +21,6 @@ export function faqContent(data, { buttons = true } = {}) {
     },
   }, f.q)));
   return [list, log];
-}
-
-export function openLai(data, onClose) {
-  const s = data.settings;
-  openModal({
-    title: `${s.assistant_title || ''} ${s.assistant_name || ''}`.trim(),
-    sub: '我是 AI 助理，不是凱勛本人。回答以官方資料為準。',
-    body: faqContent(data),
-    onClose,
-  });
 }
 
 export function teaLine(data, kind) {

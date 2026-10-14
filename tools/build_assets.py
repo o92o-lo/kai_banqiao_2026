@@ -26,7 +26,7 @@ RAW = ROOT / "assets" / "raw"
 OUT = ROOT / "assets" / "scene"
 
 # 場景來源：有 P0 v2 就用它，否則先用 P0（名稱要和 js/layout.js 的 SCENES 對應）
-SCENE_SOURCES = [("p0v2", RAW / "p0v2-scene.jpg"), ("p0", RAW / "p0-keyframe.jpg")]
+SCENE_SOURCES = [("p0v2", RAW / "p0v2-scene.jpg"), ("p0nolai", RAW / "p0-scene-nolai.jpg"), ("p0", RAW / "p0-keyframe.jpg")]  # D58：拿掉小賴的版本優先
 
 KB = 1024
 
@@ -149,6 +149,17 @@ def build_lai():
         img = img.resize((round(img.width * h / img.height), h), Image.LANCZOS)
         s = save_png(img, OUT / f"lai-{name}.png")
         print(f"lai-{name}: {img.size} {s // KB}KB")
+
+    # D61：工具列、聊天視窗用的正方形頭像（頭頂到下巴完整、臉置中、四周留邊）
+    FACE = (165, 84, 492, 402)  # 原圖待機格的頭部範圍（含頭髮、耳朵、眼鏡）
+    head = key_green(src.crop((0, 0, src.width // 2, src.height))).crop(FACE)
+    side = max(head.size)
+    pad = round(side * 0.08)
+    sq = Image.new("RGBA", (side + pad * 2, side + pad * 2), (0, 0, 0, 0))
+    sq.paste(head, (pad + (side - head.width) // 2, pad + (side - head.height) // 2), head)
+    sq = sq.resize((160, 160), Image.LANCZOS)
+    s = save_png(sq, OUT / "lai-face.png")
+    print(f"lai-face: {sq.size} {s // KB}KB")
 
 
 def build_board_inner():

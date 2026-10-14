@@ -1,10 +1,22 @@
 // 布告欄：紅便條「小額捐款」；彈窗三個分頁
-import { h, longDate, taipeiToday } from '../util.js';
+import { h, longDate, shortDate, taipeiToday } from '../util.js';
 import { openModal, tabs } from '../modal.js';
 
 export function upcoming(data) {
   const today = taipeiToday();
   return (data.events || []).filter((e) => !e.date || e.date >= today);
+}
+
+// 右半「近日活動」便條（D59）：下一場活動的日期＋標題；沒有就「行程整理中」
+export function renderEventNote(el, data) {
+  if (!el) return;
+  const next = upcoming(data)[0];
+  el.replaceChildren(
+    h('span', { class: 'pin', 'aria-hidden': 'true' }),
+    h('span', { class: 'en-head' }, '近日活動'),
+    ...(next
+      ? [h('span', { class: 'en-date' }, shortDate(next.date)), h('span', { class: 'en-title' }, next.title)]
+      : [h('span', { class: 'en-title' }, '行程整理中')]));
 }
 
 // 紅便條（D51）：放大約 2 倍，上方一顆圖釘

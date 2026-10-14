@@ -45,7 +45,7 @@ function buildWorld() {
     world.append(pct(h('div', { class: 'ov ov-cover', 'aria-hidden': 'true' },
       h('img', { src: 'assets/cover-kai.jpg', alt: '', draggable: 'false' })), SCENE.cover));
   }
-  for (const name of ['title', 'banner', 'plaque', 'station', 'nameplate', 'ballot', 'donateNote', 'flowerSign']) {
+  for (const name of ['title', 'banner', 'plaque', 'station', 'nameplate', 'ballot', 'donateNote', 'eventNote', 'flowerSign']) {
     if (!SCENE[name]) continue;
     texts[name] = pct(h('div', { class: `ov ov-text ov-${name}`, 'aria-hidden': 'true' }), SCENE[name]);
     world.append(texts[name]);
@@ -184,10 +184,11 @@ function toScreen(xPct, yPct) {
 
 function positionBubble() {
   const b = ui.bubble;
-  const box = mode === 'mobile' && SCENE.bubbleMobile;
+  const box = mode === 'mobile' ? SCENE.bubbleMobile : SCENE.bubbleDesktop;
   b.classList.toggle('bubble-side', !!box);
+  b.classList.toggle('tail-left', !!box && box.tail === 'left');
   if (box) {
-    // 手機：放在政見板下方、凱勛左邊的牆面，不蓋政見板；字放不下就縮
+    // 放在不壓政見板的框裡；字放不下就縮
     const p = toScreen(box.x, box.y);
     const w = (box.w / 100) * worldRect.w, hgt = (box.h / 100) * worldRect.h;
     Object.assign(b.style, { left: `${p.x}px`, top: `${p.y}px`, width: `${w}px`, maxWidth: '', maxHeight: `${hgt}px`, fontSize: '' });
@@ -267,8 +268,8 @@ export function card(node, ms = 3600) {
     c.style.top = `${window.innerHeight - TOOLBAR_H - 12}px`;
     clampX(c, window.innerWidth / 2);
   } else {
-    const r = SCENE.hotspots.flowers;
-    const p = toScreen(r.x + r.w / 2 + 6, r.y);
+    // 花籃區右下方的地板（不蓋布告欄的小額捐款紅紙）
+    const p = toScreen(22, 74);
     c.style.top = `${p.y}px`;
     clampX(c, p.x);
   }

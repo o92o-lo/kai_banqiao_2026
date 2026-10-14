@@ -59,6 +59,11 @@ export function flower(variant) {
   return post({ action: 'flower', client: clientId(), variant }, 15000);
 }
 
+// 小賴：Apps Script 冷啟動可能要 6–12 秒，再加模型回答，所以前端最多等 25 秒（Q28）
+export function chat(message, history) {
+  return post({ action: 'chat', client: clientId(), message, history }, 25000);
+}
+
 // 每個瀏覽器一個隨機 ID；讀不到 localStorage 就每次新產生
 export function clientId() {
   const make = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));

@@ -4,11 +4,12 @@ import { initModal } from './modal.js';
 import { initScene, SCENE, getText, getMode, ui, toast, hint, card, flashLabels, addFlower, announce, positionBubble, setLaiTalking } from './scene.js';
 import { storageGet, storageSet, h, setting } from './util.js';
 import { openCatalog } from './catalog.js';
-import { renderDonateNote, openBulletin } from './zones/bulletin.js';
+import { renderDonateNote, renderEventNote, openBulletin } from './zones/bulletin.js';
 import { renderBanner, openVote, countdownShort, ballotText } from './zones/backdrop.js';
 import { openPolicyBoard } from './zones/policy.js';
 import { openProfile, startBubble, renderNameplate } from './zones/desk.js';
-import { openLai, teaLine } from './zones/teatable.js';
+import { teaLine } from './zones/teatable.js';
+import { openChat } from './chat.js';
 import { openTalk } from './zones/characters.js';
 import { sendFlower, canSend, TOO_FAST, blessingCard, renderFlowerSign } from './zones/flowers.js';
 import { openDownloads } from './zones/welcome.js';
@@ -32,6 +33,7 @@ function fillTexts(data) {
   renderNameplate(getText('nameplate'), setting(data, 'nameplate_text'));
   renderBanner(data, getText('banner'));
   renderDonateNote(getText('donateNote'));
+  renderEventNote(getText('eventNote'), data);
   if (getText('plaque')) getText('plaque').textContent = '理想板橋';
   if (getText('station')) getText('station').textContent = '板橋';
   if (getText('ballot')) getText('ballot').textContent = ballotText(s);
@@ -42,10 +44,18 @@ function fillTexts(data) {
 
 function makeHandler(data) {
   let sent = 0; // 這次瀏覽送出的盆數：款式 a→b→c 輪流
+  // 小賴回答下方的出處連結要開的彈窗
+  const links = {
+    policy: (code) => openPolicyBoard(data, code),
+    profile: () => openProfile(data),
+    events: () => openBulletin(data, 0),
+    donate: () => openBulletin(data, 1),
+    vote: () => openVote(data),
+  };
   return async (action, from) => {
     const [name, arg] = action.split(':');
     switch (name) {
-      case 'bulletin': return openBulletin(data);
+      case 'bulletin': return openBulletin(data, arg === 'donate' ? 1 : 0);
       case 'vote': return openVote(data);
       case 'policyboard': return openPolicyBoard(data);
       case 'profile': return openProfile(data);
@@ -53,7 +63,7 @@ function makeHandler(data) {
       case 'kid': return openTalk(data, 'kid');
       case 'lai':
         setLaiTalking(true);
-        return openLai(data, () => setLaiTalking(false));
+        return openChat(data, links, () => setLaiTalking(false));
       case 'tea': return toast(teaLine(data, arg), from);
       case 'flower': {
         if (!canSend()) { card(blessingCard(TOO_FAST)); announce(TOO_FAST); return; }

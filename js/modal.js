@@ -1,11 +1,12 @@
 // 彈窗系統：一個 <dialog>，開啟時焦點移入，關閉時回到原物件；Esc、✕、點背景都能關
 import { h } from './util.js';
 
-let dialog, titleEl, subEl, bodyEl, footEl, opener = null, onCloseFn = null;
+let dialog, iconEl, titleEl, subEl, bodyEl, footEl, opener = null, onCloseFn = null;
 
 export function initModal() {
   dialog = document.getElementById('modal');
   titleEl = dialog.querySelector('.modal-title');
+  iconEl = dialog.querySelector('.modal-icon');
   subEl = dialog.querySelector('.modal-sub');
   bodyEl = dialog.querySelector('.modal-body');
   footEl = dialog.querySelector('.modal-foot');
@@ -26,12 +27,14 @@ export function initModal() {
 // openModal({ title, sub, body: Node|Node[], foot: Node|Node[] }, openerEl)
 // variant：'wide'＝政見板大圖、'talk'＝角色對話
 // onClose：彈窗關掉時呼叫（換到別的彈窗內容時不會呼叫，關掉才會）
-export function openModal({ title, sub = '', body = [], foot = [], variant = '', onClose = null }, from = document.activeElement) {
+export function openModal({ title, sub = '', body = [], foot = [], variant = '', onClose = null, icon = '' }, from = document.activeElement) {
   if (!dialog.open) opener = from instanceof HTMLElement ? from : null;
   if (onCloseFn && onCloseFn !== onClose) { const fn = onCloseFn; onCloseFn = null; fn(); }
   onCloseFn = onClose;
   dialog.className = variant ? `modal-${variant}` : '';
   titleEl.textContent = title;
+  iconEl.hidden = !icon;
+  if (icon) iconEl.src = icon;
   subEl.textContent = sub;
   subEl.hidden = !sub;
   bodyEl.replaceChildren(...[body].flat(Infinity).filter(Boolean));

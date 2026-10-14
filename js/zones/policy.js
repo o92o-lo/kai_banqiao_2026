@@ -27,6 +27,8 @@ export function openPolicyBoard(data, code = null) {
 
   const figure = h('div', { class: 'pb-figure' }, pictureEl(POLICY_BOARD.src, 'pb-img', '理想板橋：板橋地標組成的小鎮圖'));
   figure.style.aspectRatio = `${POLICY_BOARD.w} / ${POLICY_BOARD.h}`;
+  // 整張板要完整看得到：高度不超過視窗 56%，下方留給政見文字
+  figure.style.width = `min(100%, calc(56dvh * ${POLICY_BOARD.w / POLICY_BOARD.h}))`;
   if (POLICY_BOARD.plaque) figure.append(pct(h('div', { class: 'pb-plaque', 'aria-hidden': 'true' }, '理想板橋'), POLICY_BOARD.plaque));
   if (POLICY_BOARD.station) figure.append(pct(h('div', { class: 'pb-station', 'aria-hidden': 'true' }, '板橋'), POLICY_BOARD.station));
   for (const s of POLICY_BOARD.spots) {
@@ -68,7 +70,6 @@ export function openPolicyBoard(data, code = null) {
         h('button', { type: 'button', class: 'btn', onclick: () => show(prev.code) }, '◀ 上一個議題'),
         h('button', { type: 'button', class: 'btn', onclick: () => show(next.code) }, '下一個議題 ▶')),
     );
-    if (detail.isConnected) detail.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
 
   function showIndex() {
@@ -79,5 +80,4 @@ export function openPolicyBoard(data, code = null) {
 
   if (code) show(code); else showIndex();
   openModal({ title: '理想板橋', variant: 'wide', body: [figure, detail] });
-  if (code) requestAnimationFrame(() => detail.scrollIntoView({ block: 'nearest' }));
 }
