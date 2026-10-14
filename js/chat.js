@@ -39,7 +39,8 @@ export function openChat(data, actions, onClose) {
   const count = h('span', { class: 'chat-count', 'aria-live': 'polite' });
   const send = h('button', { type: 'submit', class: 'btn btn-send' }, '送出');
   const form = h('form', { class: 'chat-form' },
-    h('p', { class: 'chat-note' }, '請勿輸入身分證、電話等個人資料。'),
+    h('p', { class: 'chat-note' }, '請勿輸入身分證、電話等個人資料。',
+      h('a', { class: 'privacy-link', href: 'privacy.html', target: '_blank', rel: 'noopener' }, '隱私權說明')),
     h('div', { class: 'chat-row' }, input, send),
     count);
 

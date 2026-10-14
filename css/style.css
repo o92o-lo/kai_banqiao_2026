@@ -424,6 +424,7 @@ dl.faq dd { margin: 0; }
 .chat-form { width: 100%; display: grid; gap: 6px; }
 .chat-form[hidden] { display: none; }
 .chat-note { margin: 0; font-size: 16px; color: var(--red-0); }
+.privacy-link { margin-left: .6em; font-size: 15px; color: var(--ink-3); }
 .chat-row { display: flex; gap: 8px; align-items: stretch; }
 .chat-input {
   flex: 1; min-width: 0; resize: none; font: 18px/1.5 var(--body); color: var(--ink);
