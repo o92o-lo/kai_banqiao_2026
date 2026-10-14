@@ -3,7 +3,7 @@
 // 換背景圖：tools/build_assets.py 產生 assets/scene/scene-<名稱>.webp/.jpg，
 // 在 SCENES 加一組（可先複製再用 ?debug=1 對位），改 ACTIVE_SCENE 即可。
 
-export const ACTIVE_SCENE = 'p0';
+export const ACTIVE_SCENE = 'p0nolai'; // D66：P0 局部貼回去小賴版（tools/build_assets.py nolai）
 
 // 可點區。label＝滑鼠移入標籤（01-spec §3.3、附錄 A）；陣列順序＝Tab 順序。
 // mobile: true 的才出現在手機版裁切畫面。
@@ -80,8 +80,8 @@ export const SCENES = {
   },
 };
 
-// D58＋D65：拿掉 P0 小賴的背景（assets/raw/p0-scene-nolai.jpg）到了以後用這組：
-// 跑 `py -3 tools/build_assets.py scene` → 用 ?debug=1 檢查座標 → 把 ACTIVE_SCENE 改成 'p0nolai'。
+// D58＋D65＋D66：P0 去小賴版（只把原本小賴那塊從 p0-scene-nolai.jpg 對齊貼回，其餘沿用 P0）
+// 重做圖：`py -3 tools/build_assets.py nolai`。座標除小賴外都沿用 p0
 // 小賴移到茶桌後方「左邊那張空椅子」：身體在椅背前、桌面後，下緣切齊桌面（y 58.3%），大小不變
 SCENES.p0nolai = {
   ...SCENES.p0,

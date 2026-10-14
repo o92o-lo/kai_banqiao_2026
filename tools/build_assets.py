@@ -26,7 +26,7 @@ RAW = ROOT / "assets" / "raw"
 OUT = ROOT / "assets" / "scene"
 
 # 場景來源：有 P0 v2 就用它，否則先用 P0（名稱要和 js/layout.js 的 SCENES 對應）
-SCENE_SOURCES = [("p0v2", RAW / "p0v2-scene.jpg"), ("p0nolai", RAW / "p0-scene-nolai.jpg"), ("p0", RAW / "p0-keyframe.jpg")]  # D58：拿掉小賴的版本優先
+SCENE_SOURCES = [("p0v2", RAW / "p0v2-scene.jpg"), ("p0", RAW / "p0-keyframe.jpg")]
 
 KB = 1024
 
@@ -173,10 +173,70 @@ def build_board_inner():
     print(f"board-inner: {img.size} webp {sw // KB}KB jpg {sj // KB}KB")
 
 
+def build_nolai():
+    """D66：P0 去小賴版。不整張換圖，只把 p0-scene-nolai.jpg 裡「原本小賴那塊」對齊後貼回 p0-keyframe.jpg。"""
+    from PIL import ImageFilter
+    base = Image.open(RAW / "p0-keyframe.jpg").convert("RGB")
+    src = Image.open(RAW / "p0-scene-nolai.jpg").convert("RGB")
+    W, H = base.size
+    # 貼回範圍（原圖座標）：小賴與身後空椅子，四周多留邊；下緣到桌面邊緣下一點
+    PATCH = (1290, 555, 1590, 852)
+    FEATHER = 6
+    # 對位：在貼回範圍外圍一圈比對（避開小賴本身），找最佳縮放與位移
+    a = np.asarray(base).astype(np.float32)
+    ring = np.zeros((H, W), bool)
+    ring[460:1000, 1150:1760] = True
+    ring[540:870, 1280:1600] = False
+    ys, xs = np.where(ring)
+    best = None
+    for sc in (0.996, 0.998, 1.0, 1.002, 1.004):
+        sw, sh = round(W * sc), round(H * sc)
+        b = np.asarray(src.resize((sw, sh), Image.LANCZOS)).astype(np.float32)
+        for dy in range(-12, 13, 2):
+            for dx in range(-12, 13, 2):
+                yy, xx = ys + dy, xs + dx
+                ok = (yy >= 0) & (yy < sh) & (xx >= 0) & (xx < sw)
+                err = np.mean((a[ys[ok], xs[ok]] - b[yy[ok], xx[ok]]) ** 2)
+                if best is None or err < best[0]:
+                    best = (err, sc, dx, dy)
+    # 細調 ±1px
+    err, sc, dx0, dy0 = best
+    sw, sh = round(W * sc), round(H * sc)
+    b = np.asarray(src.resize((sw, sh), Image.LANCZOS)).astype(np.float32)
+    for dy in range(dy0 - 1, dy0 + 2):
+        for dx in range(dx0 - 1, dx0 + 2):
+            yy, xx = ys + dy, xs + dx
+            ok = (yy >= 0) & (yy < sh) & (xx >= 0) & (xx < sw)
+            e = np.mean((a[ys[ok], xs[ok]] - b[yy[ok], xx[ok]]) ** 2)
+            if e < best[0]:
+                best = (e, sc, dx, dy)
+    err, sc, dx, dy = best
+    print(f"nolai 對位：縮放 {sc}、位移 dx={dx} dy={dy}、外圍 RMSE {err ** .5:.1f}")
+    aligned = Image.fromarray(b.clip(0, 255).astype(np.uint8)).crop((dx, dy, dx + W, dy + H))
+    # 羽化遮罩：貼回範圍內為白，邊緣 FEATHER px 漸層
+    mask = Image.new("L", (W, H), 0)
+    x0, y0, x1, y1 = PATCH
+    mask.paste(255, (x0 + FEATHER, y0 + FEATHER, x1 - FEATHER, y1 - FEATHER))
+    mask = mask.filter(ImageFilter.GaussianBlur(FEATHER / 2))
+    merged = Image.composite(aligned, base, mask)
+    # QA：貼回前後與差異
+    QA = RAW / "qa"
+    QA.mkdir(parents=True, exist_ok=True)
+    box = (x0 - 120, y0 - 80, x1 + 120, y1 + 80)
+    pair = Image.new("RGB", ((box[2] - box[0]) * 2 + 10, box[3] - box[1]), "white")
+    pair.paste(base.crop(box), (0, 0))
+    pair.paste(merged.crop(box), (box[2] - box[0] + 10, 0))
+    pair.save(QA / "nolai-patch-before-after.png")
+    img = resize_w(merged, 1920)
+    qw, sw_ = save_under(img, OUT / "scene-p0nolai.webp", "WEBP", 400 * KB, method=6)
+    qj, sj = save_under(img, OUT / "scene-p0nolai.jpg", "JPEG", 400 * KB, optimize=True, progressive=True)
+    print(f"scene-p0nolai: {img.size}  webp {sw_ // KB}KB  jpg {sj // KB}KB")
+
+
 TASKS = {
     "scene": build_scene, "policyboard": build_policyboard, "cover": build_cover,
     "photo": build_photo, "flowers": build_flowers, "chars": build_chars,
-    "lai": build_lai, "boardinner": build_board_inner,
+    "lai": build_lai, "boardinner": build_board_inner, "nolai": build_nolai,
 }
 
 if __name__ == "__main__":
