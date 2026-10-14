@@ -9,6 +9,8 @@ const PER_MINUTE = 6;
 const HISTORY = 4;
 const DOWN_TEXT = '小賴去泡茶了，先看看常見問題吧！';
 const THINKING_TEXT = '小賴想一下…';
+const SLOW_TEXT = '題目有點難，小賴還在查資料…'; // D72：等超過 12 秒才出現
+const SLOW_MS = 12000;
 
 const state = {
   log: [],        // { kind: 'user'|'lai'|'faq-q'|'faq-a'|'down', text, sources }
@@ -28,7 +30,8 @@ export function openChat(data, actions, onClose) {
 
   const face = h('img', { class: 'chat-face', src: 'assets/scene/lai-idle.png', alt: '' });
   const log = h('div', { class: 'chat-log', role: 'log', 'aria-live': 'polite', 'aria-label': '對話紀錄' });
-  const thinking = h('p', { class: 'msg msg-lai msg-thinking', hidden: true }, THINKING_TEXT);
+  const slow = h('span', { class: 'thinking-slow', hidden: true }, SLOW_TEXT);
+  const thinking = h('p', { class: 'msg msg-lai msg-thinking', hidden: true }, h('span', { class: 'thinking-main' }, THINKING_TEXT), slow);
   const faq = h('div', { class: 'faq-buttons', role: 'group', 'aria-label': '常見問題' },
     (data.faq || []).filter((f) => f.button !== false).map((f) => h('button', { type: 'button', class: 'btn', onclick: () => askFaq(f) }, f.q)));
 
@@ -44,7 +47,7 @@ export function openChat(data, actions, onClose) {
     h('div', { class: 'chat-row' }, input, send),
     count);
 
-  ui = { face, log, thinking, input, count, send, form, data, actions };
+  ui = { face, log, thinking, slow, input, count, send, form, data, actions };
 
   const updateCount = () => {
     const n = [...input.value].length;
@@ -118,10 +121,14 @@ async function askAi(raw) {
   }
 }
 
+let slowTimer = null;
 function setThinking(on) {
   state.busy = on;
+  clearTimeout(slowTimer);
   if (!ui) return;
   ui.thinking.hidden = !on;
+  ui.slow.hidden = true;
+  if (on) slowTimer = setTimeout(() => { if (ui) ui.slow.hidden = false; }, SLOW_MS);
   ui.face.src = on ? 'assets/scene/lai-talk.png' : 'assets/scene/lai-idle.png';
   ui.send.disabled = on || !ui.input.value.trim();
   if (on) ui.thinking.scrollIntoView({ block: 'nearest' });

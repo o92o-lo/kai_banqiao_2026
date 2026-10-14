@@ -233,10 +233,20 @@ def build_nolai():
     print(f"scene-p0nolai: {img.size}  webp {sw_ // KB}KB  jpg {sj // KB}KB")
 
 
+def build_icons():
+    """D73：分頁圖示（32×32）與 iPhone 主畫面圖示（180×180，實心底色，iOS 不支援透明）。"""
+    face = Image.open(OUT / "lai-face.png").convert("RGBA")
+    face.resize((32, 32), Image.LANCZOS).save(ROOT / "assets" / "favicon-32.png", optimize=True)
+    bg = Image.new("RGBA", (180, 180), (221, 238, 253, 255))  # --sky-0
+    bg.alpha_composite(face.resize((164, 164), Image.LANCZOS), (8, 10))
+    bg.convert("RGB").save(ROOT / "assets" / "apple-touch-icon.png", optimize=True)
+    print("icons: favicon-32.png、apple-touch-icon.png")
+
+
 TASKS = {
     "scene": build_scene, "policyboard": build_policyboard, "cover": build_cover,
     "photo": build_photo, "flowers": build_flowers, "chars": build_chars,
-    "lai": build_lai, "boardinner": build_board_inner, "nolai": build_nolai,
+    "lai": build_lai, "boardinner": build_board_inner, "nolai": build_nolai, "icons": build_icons,
 }
 
 if __name__ == "__main__":

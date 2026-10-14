@@ -59,9 +59,9 @@ export function flower(variant, blessingId) {
   return post({ action: 'flower', client: clientId(), variant, blessingId }, 15000);
 }
 
-// 小賴：Apps Script 冷啟動可能要 6–12 秒，再加模型回答，所以前端最多等 25 秒（Q28）
+// 小賴：Apps Script 冷啟動可能要 6–12 秒，再加模型回答（紅隊有題目 30–36 秒），前端最多等 40 秒（D72）
 export function chat(message, history) {
-  return post({ action: 'chat', client: clientId(), message, history }, 25000);
+  return post({ action: 'chat', client: clientId(), message, history }, 40000);
 }
 
 // 每個瀏覽器一個隨機 ID；讀不到 localStorage 就每次新產生

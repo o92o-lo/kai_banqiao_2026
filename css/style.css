@@ -413,7 +413,9 @@ dl.faq dd { margin: 0; }
 .chat-face { width: 100%; height: auto; display: block; background: var(--sky-0); border: 3px solid var(--ink); }
 @media (max-width: 600px) { .chat { grid-template-columns: 1fr; } .chat-side { display: none; } }
 .msg-thinking { color: var(--ink-3); font-style: normal; }
-.msg-thinking::after { content: ""; display: inline-block; width: 1.2em; animation: dots 1.2s steps(4) infinite; }
+.msg-thinking .thinking-main::after { content: ""; display: inline-block; width: 1.2em; animation: dots 1.2s steps(4) infinite; }
+.thinking-slow { display: block; margin-top: 4px; font-size: 16px; color: var(--ink-3); }
+.thinking-slow[hidden] { display: none; }
 @keyframes dots { 0% { content: ""; } 25% { content: "．"; } 50% { content: "．．"; } 75% { content: "．．．"; } }
 .msg-thinking[hidden] { display: none; }
 .msg-text { margin: 0 !important; white-space: pre-line; }
@@ -451,5 +453,5 @@ dl.faq dd { margin: 0; }
 @media (prefers-reduced-motion: reduce) {
   .arrow, .tag-flash, .toast, .bless-card, .ov-flower, .talk-policy, .ov-donateNote, .pb-spot { animation: none !important; }
   .hot, .pb-spot, .bubble, .loader-bar { transition: none; }
-  .msg-thinking::after { animation: none; content: "…"; }
+  .msg-thinking .thinking-main::after { animation: none; content: "…"; }
 }
