@@ -187,7 +187,9 @@ function flower_(body) {
       .map(function (r) { return { id: num_(r['編號']), text: str_(r['祝福語']) }; })
       .filter(function (b) { return b.text; });
     if (!list.length) return { error: 'no_blessing' };
-    var b = list[Math.floor(Math.random() * list.length)];
+    // D62：網站先顯示的那句（blessingId）在啟用中就記它，否則才隨機
+    var wanted = num_(body.blessingId);
+    var b = list.filter(function (x) { return x.id === wanted; })[0] || list[Math.floor(Math.random() * list.length)];
     // 款式由網站依序給 a→b→c；沒給或不對就隨機
     var variant = /^[abc]$/.test(str_(body.variant)) ? str_(body.variant) : ['a', 'b', 'c'][Math.floor(Math.random() * 3)];
 

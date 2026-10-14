@@ -55,8 +55,8 @@ async function post(body, ms) {
   return fetchJson(API_URL, ms, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
 }
 
-export function flower(variant) {
-  return post({ action: 'flower', client: clientId(), variant }, 15000);
+export function flower(variant, blessingId) {
+  return post({ action: 'flower', client: clientId(), variant, blessingId }, 15000);
 }
 
 // 小賴：Apps Script 冷啟動可能要 6–12 秒，再加模型回答，所以前端最多等 25 秒（Q28）

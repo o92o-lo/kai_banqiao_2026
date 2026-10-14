@@ -11,7 +11,7 @@ import { openProfile, startBubble, renderNameplate } from './zones/desk.js';
 import { teaLine } from './zones/teatable.js';
 import { openChat } from './chat.js';
 import { openTalk } from './zones/characters.js';
-import { sendFlower, canSend, TOO_FAST, blessingCard, renderFlowerSign } from './zones/flowers.js';
+import { nextBlessing, markSent, postFlowerInBackground, canSend, TOO_FAST, blessingCard, renderFlowerSign } from './zones/flowers.js';
 import { openDownloads } from './zones/welcome.js';
 
 const bar = document.querySelector('.loader-bar');
@@ -67,16 +67,19 @@ function makeHandler(data) {
       case 'tea': return toast(teaLine(data, arg), from);
       case 'flower': {
         if (!canSend()) { card(blessingCard(TOO_FAST)); announce(TOO_FAST); return; }
+        // D62：按下就立刻加花籃、出卡片；後台在背景記錄，不擋畫面
         const variant = 'abc'[sent % 3];
         sent += 1;
+        markSent();
         if (getMode() === 'desktop') addFlower();
-        const r = await sendFlower(data, variant);
-        card(blessingCard(r.blessing));
-        announce(r.blessing);
-        if (r.count != null) {
-          data.flowerCount = r.count;
-          renderFlowerSign(getText('flowerSign'), r.count);
-        }
+        const b = nextBlessing(data);
+        card(blessingCard(b.text));
+        announce(b.text);
+        postFlowerInBackground(variant, b.id).then((count) => {
+          if (count == null) return;
+          data.flowerCount = count;
+          renderFlowerSign(getText('flowerSign'), count);
+        });
         return;
       }
       case 'downloads': return openDownloads(data);

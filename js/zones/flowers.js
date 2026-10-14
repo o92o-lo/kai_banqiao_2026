@@ -1,5 +1,5 @@
 // 花籃區：按一下 → 疊一個新花籃＋祝福語卡片＋計數 +1（寫入 Sheet「花籃紀錄」）
-// 失敗時從本地 blessings 隨機抽一句，計數不加（04 §3.4）
+// D62：畫面全程不等網路——前端抽祝福語、立刻顯示卡片，背景再送後台；失敗計數不加
 import { h, pick, storageGet, storageSet } from '../util.js';
 import { flower as postFlower } from '../api.js';
 
@@ -27,18 +27,31 @@ export function canSend() {
   return recentTimes().length < MAX_IN_WINDOW;
 }
 
-// 回傳 { blessing, count|null }。variant＝這盆的款式（a→b→c 輪流），一起記到後台
-export async function sendFlower(data, variant) {
+// D62：按下就在前端抽一句（避免和上一句相同），不等網路
+let lastId = null;
+export function nextBlessing(data) {
+  const all = data.blessings || [];
+  const pool = all.length > 1 ? all.filter((b) => b.id !== lastId) : all;
+  const b = pick(pool) || { id: null, text: '' };
+  lastId = b.id;
+  return b;
+}
+
+// 記下這次送出的時間（10 秒 3 盆的計算用）
+export function markSent() {
   storageSet(KEY, JSON.stringify([...recentTimes(), Date.now()]));
+}
+
+// 背景送到後台：記錄畫面上那句的編號；回傳後台的計數，失敗回 null（畫面不受影響）
+export async function postFlowerInBackground(variant, blessingId) {
   try {
-    const r = await postFlower(variant);
-    if (r && !r.error && r.blessing) return { blessing: r.blessing, count: Number(r.count) };
+    const r = await postFlower(variant, blessingId);
+    if (r && !r.error && r.count != null) return Number(r.count);
     if (r && r.error) console.info('花籃沒有記錄：', r.error);
   } catch (err) {
-    console.info('送花籃連不到後台，改用本地祝福語', err.message || err);
+    console.info('送花籃連不到後台', err.message || err);
   }
-  const b = pick(data.blessings || []);
-  return { blessing: b ? b.text : '', count: null };
+  return null;
 }
 
 export function blessingCard(text) {

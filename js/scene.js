@@ -8,7 +8,7 @@ export const DEBUG = new URLSearchParams(location.search).get('debug') === '1';
 
 const TOPBAR = 44;   // 手機頂部細條高（px）
 const TOOLBAR_H = 68; // 手機底部工具列高（px）
-const MAX_FLOWERS = 6;
+const MAX_FLOWERS = 2; // D63：背景圖已畫 4 盆，畫面總數最多 6 盆
 
 let stage, clip, world, hud, tag, onAction;
 let mode = null;
@@ -260,20 +260,32 @@ export function hint(text, ms = 3000) {
   setTimeout(() => t.remove(), ms);
 }
 
-// 祝福卡：桌機在花籃區上方，手機從工具列上方彈出
-export function card(node, ms = 3600) {
-  const c = h('div', { class: `bless-card${mode === 'mobile' ? ' from-bottom' : ''}`, role: 'status' }, node);
-  hud.append(c);
+// 祝福卡（D62）：畫面上永遠只有一張。已經有卡就換字、重新計時；太快的提示也用同一張
+// 桌機在花籃區右側地板（不壓布告欄、背板、政見板），手機在工具列上方
+let blessCard = null, blessTimer = null;
+export function card(node, ms = 3000) {
+  if (!blessCard) {
+    blessCard = h('div', { class: 'bless-card', role: 'status' });
+    hud.append(blessCard);
+  }
+  const c = blessCard;
+  c.replaceChildren(node);
+  c.classList.toggle('from-bottom', mode === 'mobile');
+  // 重新播放出現動畫
+  c.style.animation = 'none';
+  void c.offsetWidth;
+  c.style.animation = '';
   if (mode === 'mobile') {
     c.style.top = `${window.innerHeight - TOOLBAR_H - 12}px`;
     clampX(c, window.innerWidth / 2);
   } else {
-    // 花籃區右下方的地板（不蓋布告欄的小額捐款紅紙）
-    const p = toScreen(22, 74);
+    const a = SCENE.blessCard || { x: 24, y: 74 };
+    const p = toScreen(a.x, a.y);
     c.style.top = `${p.y}px`;
     clampX(c, p.x);
   }
-  setTimeout(() => c.remove(), ms);
+  clearTimeout(blessTimer);
+  blessTimer = setTimeout(() => { c.remove(); blessCard = null; }, ms);
 }
 
 // 送花籃：在花籃區旁疊一個新花籃（最多 6 個）
