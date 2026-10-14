@@ -38,19 +38,21 @@ export function pictureEl(src, cls, alt = '') {
 function buildWorld() {
   world.append(pictureEl(SCENE.src, 'scene-img'));
 
+  // 政見板畫框內換成板橋版畫面（D53）
+  if (SCENE.boardInner) world.append(pct(pictureEl('assets/scene/board-inner', 'ov ov-boardInner'), SCENE.boardInner));
+  // 背板封面照：符合寬度、不裁切（D48）
   if (SCENE.cover) {
-    const c = pct(h('div', { class: 'ov ov-cover', 'aria-hidden': 'true' },
-      h('img', { src: 'assets/cover-kai.jpg', alt: '', draggable: 'false' })), SCENE.cover);
-    c.firstChild.style.objectPosition = SCENE.cover.focus || '50% 50%';
-    world.append(c);
+    world.append(pct(h('div', { class: 'ov ov-cover', 'aria-hidden': 'true' },
+      h('img', { src: 'assets/cover-kai.jpg', alt: '', draggable: 'false' })), SCENE.cover));
   }
-  for (const name of ['banner', 'plaque', 'station', 'ballot', 'donateNote', 'flowerSign']) {
+  for (const name of ['title', 'banner', 'plaque', 'station', 'nameplate', 'ballot', 'donateNote', 'flowerSign']) {
     if (!SCENE[name]) continue;
     texts[name] = pct(h('div', { class: `ov ov-text ov-${name}`, 'aria-hidden': 'true' }), SCENE[name]);
     world.append(texts[name]);
   }
   for (const [id, o] of Object.entries(SCENE.overlays || {})) {
     overlayEls[id] = pct(h('img', { class: `ov ov-char ov-${id}`, src: o.src, alt: '', draggable: 'false' }), { x: o.x, y: o.y, w: o.w });
+    if (o.talk) new Image().src = o.talk; // 先載好說話格
     world.append(overlayEls[id]);
   }
   flowerLayer = h('div', { class: 'ov ov-flowers', 'aria-hidden': 'true' });
@@ -181,6 +183,18 @@ function toScreen(xPct, yPct) {
 }
 
 function positionBubble() {
+  const b = ui.bubble;
+  const box = mode === 'mobile' && SCENE.bubbleMobile;
+  b.classList.toggle('bubble-side', !!box);
+  if (box) {
+    // 手機：放在政見板下方、凱勛左邊的牆面，不蓋政見板；字放不下就縮
+    const p = toScreen(box.x, box.y);
+    const w = (box.w / 100) * worldRect.w, hgt = (box.h / 100) * worldRect.h;
+    Object.assign(b.style, { left: `${p.x}px`, top: `${p.y}px`, width: `${w}px`, maxWidth: '', maxHeight: `${hgt}px`, fontSize: '' });
+    for (let fs = 14; fs >= 11 && b.scrollHeight > hgt + 1; fs -= 1) b.style.fontSize = `${fs}px`;
+    return;
+  }
+  Object.assign(b.style, { width: '', maxHeight: '', fontSize: '' });
   if (!SCENE.bubble) return;
   const p = toScreen(SCENE.bubble.x, SCENE.bubble.y);
   const maxW = Math.min(mode === 'mobile' ? window.innerWidth - 24 : 320, window.innerWidth - 16);
@@ -262,10 +276,11 @@ export function card(node, ms = 3600) {
 }
 
 // 送花籃：在花籃區旁疊一個新花籃（最多 6 個）
-export function addFlower(variant) {
+// 款式依序 a→b→c，第 4 盆起重新輪（D50）
+export function addFlower() {
   const slots = SCENE.flowerSlots || [];
   if (flowerCount >= Math.min(MAX_FLOWERS, slots.length)) return;
-  const v = /^[abc]$/.test(variant) ? variant : 'abc'[flowerCount % 3];
+  const v = 'abc'[flowerCount % 3];
   const slot = slots[flowerCount];
   const img = h('img', { class: `ov-flower${reducedMotion() ? '' : ' pop'}`, src: `assets/scene/flower-${v}.png`, alt: '', draggable: 'false' });
   Object.assign(img.style, { left: `${slot.x}%`, top: `${slot.y}%`, height: `${slot.h}%` });
@@ -274,5 +289,11 @@ export function addFlower(variant) {
 }
 
 export function announce(text) { ui.live.textContent = text; }
+
+// 小賴：開聊天時換說話格（D46）
+export function setLaiTalking(on) {
+  const o = SCENE.overlays && SCENE.overlays.lai;
+  if (o && overlayEls.lai) overlayEls.lai.src = on && o.talk ? o.talk : o.src;
+}
 
 export { positionBubble };

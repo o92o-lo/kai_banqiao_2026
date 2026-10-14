@@ -39,7 +39,8 @@ export function openPolicyBoard(data, code = null) {
       onpointerleave: () => { tip.hidden = true; },
       onfocus: () => showTip(btn, p.title),
       onblur: () => { tip.hidden = true; },
-    }, DEBUG ? h('span', { class: 'debug-id' }, s.code) : null), s);
+    }, h('span', { class: 'pb-short', 'aria-hidden': 'true' }, s.short || ''),
+       DEBUG ? h('span', { class: 'debug-id' }, s.code) : null), s);
     spotEls[s.code] = btn;
     figure.append(btn);
   }

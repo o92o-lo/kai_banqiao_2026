@@ -24,12 +24,13 @@ export function faqContent(data, { buttons = true } = {}) {
   return [list, log];
 }
 
-export function openLai(data) {
+export function openLai(data, onClose) {
   const s = data.settings;
   openModal({
     title: `${s.assistant_title || ''} ${s.assistant_name || ''}`.trim(),
     sub: '我是 AI 助理，不是凱勛本人。回答以官方資料為準。',
     body: faqContent(data),
+    onClose,
   });
 }
 

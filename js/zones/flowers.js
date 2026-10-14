@@ -3,7 +3,10 @@
 import { h, pick, storageGet, storageSet } from '../util.js';
 import { flower as postFlower } from '../api.js';
 
-const KEY = 'kai.flowerAt';
+const KEY = 'kai.flowerTimes';
+const WINDOW_MS = 10000; // D50：同一裝置 10 秒內最多 3 盆
+const MAX_IN_WINDOW = 3;
+export const TOO_FAST = '花籃送太快了，休息一下再送吧！';
 
 // D38：計數 < 10 只顯示「送花籃祝福凱勛」
 export function renderFlowerSign(el, count) {
@@ -12,25 +15,30 @@ export function renderFlowerSign(el, count) {
   if (count >= 10) el.append(h('span', { class: 'fs-count' }, `已有 ${count} 位鄉親送花籃`));
 }
 
-// 冷卻中回傳還要等幾秒，否則 0
-export function cooldownLeft(data) {
-  const cooldown = (Number(data.settings.flower_cooldown_seconds) || 30) * 1000;
-  const last = Number(storageGet(KEY)) || 0;
-  const left = cooldown - (Date.now() - last);
-  return left > 0 ? Math.ceil(left / 1000) : 0;
+function recentTimes() {
+  let list = [];
+  try { list = JSON.parse(storageGet(KEY) || '[]'); } catch { list = []; }
+  const now = Date.now();
+  return Array.isArray(list) ? list.filter((t) => typeof t === 'number' && now - t < WINDOW_MS && t <= now) : [];
 }
 
-// 回傳 { blessing, variant, count|null }
-export async function sendFlower(data) {
-  storageSet(KEY, String(Date.now()));
+// 這 10 秒內還能不能送
+export function canSend() {
+  return recentTimes().length < MAX_IN_WINDOW;
+}
+
+// 回傳 { blessing, count|null }。variant＝這盆的款式（a→b→c 輪流），一起記到後台
+export async function sendFlower(data, variant) {
+  storageSet(KEY, JSON.stringify([...recentTimes(), Date.now()]));
   try {
-    const r = await postFlower();
-    if (r && !r.error && r.blessing) return { blessing: r.blessing, variant: r.variant, count: Number(r.count) };
+    const r = await postFlower(variant);
+    if (r && !r.error && r.blessing) return { blessing: r.blessing, count: Number(r.count) };
+    if (r && r.error) console.info('花籃沒有記錄：', r.error);
   } catch (err) {
-    console.warn('送花籃失敗，改用本地祝福語', err);
+    console.info('送花籃連不到後台，改用本地祝福語', err.message || err);
   }
   const b = pick(data.blessings || []);
-  return { blessing: b ? b.text : '', variant: null, count: null };
+  return { blessing: b ? b.text : '', count: null };
 }
 
 export function blessingCard(text) {

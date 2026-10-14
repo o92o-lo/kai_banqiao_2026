@@ -1,16 +1,16 @@
-// 啟動：載入背景圖與資料 → 建場景 → 填疊加文字 → 綁動作
-import { bootstrap } from './api.js';
+// 啟動：用現有資料立刻顯示場景 → 背景向後台要最新資料，回來就無聲更新（D54）
+import { initialData, refreshData } from './api.js';
 import { initModal } from './modal.js';
-import { initScene, SCENE, getText, getMode, ui, toast, hint, card, flashLabels, addFlower, announce, positionBubble } from './scene.js';
-import { storageGet, storageSet, h } from './util.js';
+import { initScene, SCENE, getText, getMode, ui, toast, hint, card, flashLabels, addFlower, announce, positionBubble, setLaiTalking } from './scene.js';
+import { storageGet, storageSet, h, setting } from './util.js';
 import { openCatalog } from './catalog.js';
 import { renderDonateNote, openBulletin } from './zones/bulletin.js';
 import { renderBanner, openVote, countdownShort, ballotText } from './zones/backdrop.js';
 import { openPolicyBoard } from './zones/policy.js';
-import { openProfile, startBubble } from './zones/desk.js';
+import { openProfile, startBubble, renderNameplate } from './zones/desk.js';
 import { openLai, teaLine } from './zones/teatable.js';
 import { openTalk } from './zones/characters.js';
-import { sendFlower, cooldownLeft, blessingCard, renderFlowerSign } from './zones/flowers.js';
+import { sendFlower, canSend, TOO_FAST, blessingCard, renderFlowerSign } from './zones/flowers.js';
 import { openDownloads } from './zones/welcome.js';
 
 const bar = document.querySelector('.loader-bar');
@@ -28,6 +28,8 @@ function loadScene() {
 
 function fillTexts(data) {
   const s = data.settings;
+  if (getText('title')) getText('title').textContent = setting(data, 'scene_title');
+  renderNameplate(getText('nameplate'), setting(data, 'nameplate_text'));
   renderBanner(data, getText('banner'));
   renderDonateNote(getText('donateNote'));
   if (getText('plaque')) getText('plaque').textContent = '理想板橋';
@@ -39,7 +41,7 @@ function fillTexts(data) {
 }
 
 function makeHandler(data) {
-  let sending = false;
+  let sent = 0; // 這次瀏覽送出的盆數：款式 a→b→c 輪流
   return async (action, from) => {
     const [name, arg] = action.split(':');
     switch (name) {
@@ -49,15 +51,16 @@ function makeHandler(data) {
       case 'profile': return openProfile(data);
       case 'cat': return openTalk(data, 'cat');
       case 'kid': return openTalk(data, 'kid');
-      case 'lai': return openLai(data);
+      case 'lai':
+        setLaiTalking(true);
+        return openLai(data, () => setLaiTalking(false));
       case 'tea': return toast(teaLine(data, arg), from);
       case 'flower': {
-        const wait = cooldownLeft(data);
-        if (wait || sending) { announce(`${wait || 1} 秒後可以再送一次`); return; }
-        sending = true;
-        if (getMode() === 'desktop') addFlower(null);
-        const r = await sendFlower(data);
-        sending = false;
+        if (!canSend()) { card(blessingCard(TOO_FAST)); announce(TOO_FAST); return; }
+        const variant = 'abc'[sent % 3];
+        sent += 1;
+        if (getMode() === 'desktop') addFlower();
+        const r = await sendFlower(data, variant);
         card(blessingCard(r.blessing));
         announce(r.blessing);
         if (r.count != null) {
@@ -73,12 +76,21 @@ function makeHandler(data) {
 }
 
 async function start() {
-  const [data] = await Promise.all([bootstrap(), loadScene()]);
+  const [data] = await Promise.all([initialData(), loadScene()]);
   bar.style.width = '100%';
   initModal();
   initScene(makeHandler(data));
   fillTexts(data);
-  startBubble(data, ui.bubble, positionBubble);
+  const refreshBubble = startBubble(data, ui.bubble, positionBubble);
+
+  // 背景更新：同一個 data 物件原地換內容，按鈕、彈窗之後讀到的都是新的
+  refreshData().then((fresh) => {
+    if (!fresh) return;
+    for (const k of Object.keys(data)) delete data[k];
+    Object.assign(data, fresh);
+    fillTexts(data);
+    refreshBubble();
+  });
   document.body.classList.add('ready');
   document.getElementById('loader').remove();
 

@@ -1,9 +1,10 @@
+/** @OnlyCurrentDoc */
 /**
  * 鄧凱勛虛擬競選總部｜網站後台 Apps Script
  * 規格：docs/06-backend-sheet.md §3.2；部署步驟：docs/deploy-apps-script.md
  *
  * GET  ?action=bootstrap            網站開啟時讀一次（快取 60 秒）
- * POST {"action":"flower","client"} 送花籃，寫一列到「花籃紀錄」
+ * POST {"action":"flower","client","variant"} 送花籃，寫一列到「花籃紀錄」（同 client 10 秒最多 3 盆）
  * POST {"action":"chat",...}        Sprint 3 才開放，目前回 {"error":"disabled"}
  *
  * 這份檔案不含任何金鑰。Gemini 金鑰只放「專案設定 → 指令碼屬性」GEMINI_API_KEY（Sprint 3 用）。
@@ -11,7 +12,8 @@
 
 var TZ = 'Asia/Taipei';
 var CACHE_SECONDS = 60;
-var FLOWER_CLIENT_SECONDS = 30;  // 同一 client 30 秒內只收一次
+var FLOWER_CLIENT_WINDOW_MS = 10000; // D50：同一 client 10 秒內
+var FLOWER_CLIENT_MAX = 3;           //       最多 3 盆
 var FLOWER_SITE_PER_MINUTE = 120; // 全站每分鐘上限
 var POLICY_ORDER = ['transit', 'family', 'elder', 'pet', 'tourism', 'housing'];
 
@@ -158,9 +160,13 @@ function flower_(body) {
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(5000)) return { error: 'busy' };
   try {
-    // 同一 client 30 秒一次
+    // 同一 client 10 秒內最多 3 盆（D50）
     var ckey = 'fc:' + client;
-    if (cache.get(ckey)) return { error: 'cooldown' };
+    var now = Date.now();
+    var recent = [];
+    try { recent = JSON.parse(cache.get(ckey) || '[]'); } catch (x) { recent = []; }
+    recent = recent.filter(function (t) { return now - t < FLOWER_CLIENT_WINDOW_MS; });
+    if (recent.length >= FLOWER_CLIENT_MAX) return { error: 'too_fast' };
     // 全站每分鐘上限
     var mkey = 'fm:' + Math.floor(Date.now() / 60000);
     var n = Number(cache.get(mkey) || 0);
@@ -172,13 +178,15 @@ function flower_(body) {
       .filter(function (b) { return b.text; });
     if (!list.length) return { error: 'no_blessing' };
     var b = list[Math.floor(Math.random() * list.length)];
-    var variant = ['a', 'b', 'c'][Math.floor(Math.random() * 3)];
+    // 款式由網站依序給 a→b→c；沒給或不對就隨機
+    var variant = /^[abc]$/.test(str_(body.variant)) ? str_(body.variant) : ['a', 'b', 'c'][Math.floor(Math.random() * 3)];
 
     var sheet = ss.getSheetByName('花籃紀錄');
     sheet.appendRow([new Date(), b.id, variant]);
     SpreadsheetApp.flush();
 
-    cache.put(ckey, '1', FLOWER_CLIENT_SECONDS);
+    recent.push(now);
+    cache.put(ckey, JSON.stringify(recent), Math.ceil(FLOWER_CLIENT_WINDOW_MS / 1000));
     cache.put(mkey, String(n + 1), 120);
     return { blessing: b.text, variant: variant, count: flowerCount_(ss) };
   } finally {

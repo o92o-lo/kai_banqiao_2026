@@ -36,35 +36,41 @@ export const SCENES = {
       policyboard: { x: 72.6, y: 5.1, w: 23.8, h: 25.7 },
       kai:         { x: 74.7, y: 32.2, w: 18.0, h: 37.3 },
       cat:         { x: 82.0, y: 70.5, w: 7.3, h: 8.3 },
-      lai:         { x: 52.3, y: 41.0, w: 7.1, h: 17.3 },
+      lai:         { x: 51.6, y: 41.5, w: 8.4, h: 16.8 },
       cup:         { x: 39.8, y: 63.3, w: 3.5, h: 5.2 },
       cup2:        { x: 53.2, y: 58.6, w: 3.5, h: 5.0 },
       snack:       { x: 48.4, y: 63.5, w: 5.1, h: 6.0 },
-      kid:         { x: 68.8, y: 69.0, w: 4.2, h: 10.5 },
+      kid:         { x: 33.2, y: 39.3, w: 8.0, h: 20.2 },
       flowers:     { x: 0.5, y: 22.9, w: 16.9, h: 56.9 },
       flyers:      { x: 3.5, y: 79.0, w: 18.5, h: 10.0 },
       numbersign:  { x: 24.1, y: 85.1, w: 6.4, h: 13.8 },
       sidedesk:    { x: 76.3, y: 85.8, w: 16.4, h: 14.2 },
     },
     // 疊加物
-    cover:  { x: 35.9, y: 7.5, w: 28.2, h: 35.4, focus: '52% 50%' }, // 背板白色區域
-    banner: { x: 37.0, y: 38.4, w: 26.0, h: 4.4 },                   // 倒數紅布條（背板下緣）
+    title:  { x: 36.4, y: 8.0, w: 27.2, h: 6.6 },                    // 背板上方標題（scene_title，D48）
+    cover:  { x: 35.9, y: 14.9, w: 28.2, h: 19.2 },                  // 封面照：符合寬度、不裁切（D48）
+    banner: { x: 41.5, y: 35.3, w: 21.5, h: 4.4 },                   // 倒數紅布條（背板下緣）
+    boardInner: { x: 73.7, y: 7.7, w: 21.6, h: 20.66 },              // 政見板畫框內：疊板橋版畫面（D53）
     plaque: { x: 79.6, y: 3.6, w: 9.8, h: 3.2 },                     // 「理想板橋」木牌
-    station: null,                                                   // P0 的政見板沒有車站；P0 v2 再填
+    station: { x: 83.2, y: 14.9, w: 2.6, h: 1.6 },                   // 「板橋」小站牌（對到車站）
+    nameplate: { x: 77.0, y: 61.3, w: 13.6, h: 6.6 },                // 辦公桌前緣桌牌（nameplate_text，D49）
     ballot: { x: 24.9, y: 86.6, w: 4.3, h: 8.6 },                    // 號次牌牌面
-    donateNote: { x: 19.8, y: 14.0, w: 2.9, h: 5.1 },                // 布告欄紅便條
+    donateNote: { x: 18.4, y: 11.9, w: 5.8, h: 9.4 },                // 布告欄紅便條，放大約 2 倍（D51）
     flowerSign: { x: 1.0, y: 18.2, w: 12.0, h: 3.6 },                // 「送花籃祝福凱勛」小牌（計數 ≥10 時多一行）
     bubble: { x: 85.2, y: 31.5 },                                    // 凱勛泡泡的錨點（頭頂）
+    bubbleMobile: { x: 70.5, y: 31.2, w: 10.3, h: 15.0 },            // 手機：泡泡放政見板下方、凱勛左邊的牆面
     kaiFace: { x: 81.0, y: 32.0, w: 8.6, h: 17.5 },                  // 資料卡像素頭像取這塊
     // 新花籃疊放位置（x、y＝左上角；h＝高，寬依圖比例）。最多 6 個
     flowerSlots: [
       { x: 15.5, y: 33, h: 27 }, { x: 12, y: 43, h: 27 }, { x: 19.5, y: 40, h: 27 },
       { x: 8.5, y: 52, h: 27 }, { x: 16, y: 50, h: 27 }, { x: 23, y: 47, h: 27 },
     ],
-    // 原圖沒畫的角色用去背圖補上（P0 v2 已畫好就設成 {}）
+    // 疊在場景上的角色圖（P0 沒畫或要換掉的）。talk＝開聊天時換的圖
     overlays: {
       cat: { src: 'assets/scene/cat.png', x: 82.0, y: 70.5, w: 7.3 },
-      kid: { src: 'assets/scene/kid.png', x: 68.8, y: 69.0, w: 4.2 },
+      kid: { src: 'assets/scene/kid.png', x: 33.2, y: 39.3, w: 8.0 },
+      // 小賴（D46）：蓋住 P0 原本的小賴，下緣切齊茶桌桌面（y 58.3%）
+      lai: { src: 'assets/scene/lai-idle.png', talk: 'assets/scene/lai-talk.png', x: 51.6, y: 41.5, w: 8.4 },
     },
     // 手機版裁切（政見板＋凱勛辦公桌＋貓）
     mobileCrop: { x: 70, y: 0, w: 30, h: 80 },
@@ -77,13 +83,14 @@ export const POLICY_BOARD = {
   w: 1600, h: 837,
   plaque: { x: 40.6, y: 1.5, w: 18.8, h: 8.2 },
   station: { x: 45.9, y: 43.0, w: 8.2, h: 3.9 },
+  // short＝常駐小標籤（D52）
   spots: [
-    { code: 'transit', x: 44.0, y: 67.5, w: 15.5, h: 10.0 },
-    { code: 'family',  x: 8.0,  y: 70.5, w: 18.5, h: 17.5 },
-    { code: 'elder',   x: 16.6, y: 56.0, w: 5.6,  h: 13.5 },
-    { code: 'pet',     x: 66.6, y: 79.0, w: 6.6,  h: 10.5 },
-    { code: 'tourism', x: 68.0, y: 44.5, w: 19.0, h: 26.0 },
-    { code: 'housing', x: 50.4, y: 17.0, w: 17.0, h: 27.0 },
+    { code: 'transit', x: 44.0, y: 67.5, w: 15.5, h: 10.0, short: '交通' },
+    { code: 'family',  x: 8.0,  y: 70.5, w: 18.5, h: 17.5, short: '親子' },
+    { code: 'elder',   x: 16.6, y: 56.0, w: 5.6,  h: 13.5, short: '樂齡' },
+    { code: 'pet',     x: 66.6, y: 79.0, w: 6.6,  h: 10.5, short: '毛孩' },
+    { code: 'tourism', x: 68.0, y: 44.5, w: 19.0, h: 26.0, short: '觀光' },
+    { code: 'housing', x: 50.4, y: 17.0, w: 17.0, h: 27.0, short: '安居' },
   ],
 };
 
@@ -96,8 +103,10 @@ export const TOOLBAR = [
   { action: 'downloads', text: '文宣', icon: 'obj-flyers' },
 ];
 
-// 角色對話畫面的預設台詞（Sheet 網站設定 cat_greeting／kid_greeting 沒填時用；多句用｜分隔）
-export const GREETING_DEFAULTS = {
-  cat: '喵～｜（貓咪蹭了蹭你的手）',
-  kid: '哈囉！要不要一起玩積木？',
+// Sheet「網站設定」沒填時的預設值
+export const SETTING_DEFAULTS = {
+  cat_greeting: '喵～｜（貓咪蹭了蹭你的手）', // 多句用｜分隔
+  kid_greeting: '哈囉！要不要一起玩積木？',
+  scene_title: '板橋區市議員參選人 鄧凱勛｜虛擬競選總部',
+  nameplate_text: '板橋區市議員參選人 鄧凱勛',
 };

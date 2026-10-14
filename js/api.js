@@ -1,4 +1,5 @@
-// 跟 Apps Script 溝通；失敗就用 data/fallback.json（04 §3.4）
+// 跟 Apps Script 溝通（D54）：開站先用瀏覽器上次存的資料或 data/fallback.json 立刻顯示，
+// 背景再向 Apps Script 要最新資料（最多等 15 秒），成功就存起來、無聲更新畫面。
 import { API_URL, BOOTSTRAP_TIMEOUT, VERSION } from './config.js';
 
 async function fetchJson(url, ms, init) {
@@ -19,15 +20,32 @@ async function fallback() {
   return data;
 }
 
-export async function bootstrap() {
-  if (!API_URL) return fallback();
+const CACHE_KEY = 'kai.bootstrap';
+
+function isBootstrap(d) {
+  return d && typeof d === 'object' && d.settings && Array.isArray(d.policies);
+}
+
+// 立刻可用的資料：上次成功的 bootstrap（localStorage）→ 沒有就用 fallback.json
+export async function initialData() {
   try {
-    const data = await fetchJson(`${API_URL}?action=bootstrap`, BOOTSTRAP_TIMEOUT);
-    if (data.error) throw new Error(data.error);
-    return data;
+    const d = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    if (isBootstrap(d)) return d;
+  } catch { /* 讀不到就用 fallback */ }
+  return fallback();
+}
+
+// 背景向 Apps Script 要最新資料；成功回傳資料並存進 localStorage，失敗回傳 null
+export async function refreshData() {
+  if (!API_URL) return null;
+  try {
+    const d = await fetchJson(`${API_URL}?action=bootstrap`, BOOTSTRAP_TIMEOUT);
+    if (!isBootstrap(d)) throw new Error(d && d.error ? d.error : 'bad_response');
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(d)); } catch { /* 存不了沒關係 */ }
+    return d;
   } catch (err) {
-    console.warn('bootstrap 失敗，改用 fallback', err);
-    return fallback();
+    console.info('後台資料暫時拿不到，先用現有內容', err.message || err);
+    return null;
   }
 }
 
@@ -37,8 +55,8 @@ async function post(body, ms) {
   return fetchJson(API_URL, ms, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
 }
 
-export function flower() {
-  return post({ action: 'flower', client: clientId() }, 8000);
+export function flower(variant) {
+  return post({ action: 'flower', client: clientId(), variant }, 15000);
 }
 
 // 每個瀏覽器一個隨機 ID；讀不到 localStorage 就每次新產生

@@ -1,7 +1,6 @@
 // 貓、小孩（D44）：對話畫面。左邊大頭像、右邊對話框逐字打出台詞，打完出現該議題政見＋「看所有政見」。
-import { h, reducedMotion } from '../util.js';
+import { h, reducedMotion, setting } from '../util.js';
 import { openModal } from '../modal.js';
-import { GREETING_DEFAULTS } from '../layout.js';
 import { policyItems, openPolicyBoard } from './policy.js';
 
 const WHO = {
@@ -13,9 +12,13 @@ const CHAR_MS = 70;   // 每個字
 const LINE_MS = 500;  // 句與句之間
 
 // 台詞：Sheet 網站設定有值就用，沒有用預設；多句用｜分隔
+// 貓：附錄 A 規定「喵～」之後接「（貓咪蹭了蹭你的手）」；cat_greeting 只填一句時自動補上
+const CAT_ACTION = '（貓咪蹭了蹭你的手）';
+
 export function greetingLines(data, who) {
-  const raw = (data.settings[WHO[who].key] || '').trim() || GREETING_DEFAULTS[who];
-  return raw.split('｜').map((t) => t.trim()).filter(Boolean);
+  const lines = setting(data, WHO[who].key).split('｜').map((t) => t.trim()).filter(Boolean);
+  if (who === 'cat' && lines.length === 1) lines.push(CAT_ACTION);
+  return lines;
 }
 
 export function openTalk(data, who) {

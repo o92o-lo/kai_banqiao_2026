@@ -1,4 +1,11 @@
-// 小工具：建 DOM、日期、亂數
+// 小工具：建 DOM、日期、亂數、Sheet 設定
+import { SETTING_DEFAULTS } from './layout.js';
+
+// Sheet「網站設定」的值；空白就用預設（layout.js SETTING_DEFAULTS）
+export function setting(data, key) {
+  const v = (data.settings && data.settings[key]) || '';
+  return String(v).trim() || SETTING_DEFAULTS[key] || '';
+}
 
 // h('p', { class: 'x' }, '文字', child) — 文字一律用 textContent，Sheet 內容不會被當成 HTML
 export function h(tag, attrs = {}, ...children) {

@@ -7,8 +7,9 @@ export function upcoming(data) {
   return (data.events || []).filter((e) => !e.date || e.date >= today);
 }
 
+// 紅便條（D51）：放大約 2 倍，上方一顆圖釘
 export function renderDonateNote(el) {
-  if (el) el.textContent = '小額捐款';
+  if (el) el.replaceChildren(h('span', { class: 'pin', 'aria-hidden': 'true' }), h('span', {}, '小額'), h('span', {}, '捐款'));
 }
 
 export function eventsContent(data) {

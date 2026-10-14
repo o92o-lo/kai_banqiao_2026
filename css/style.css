@@ -41,7 +41,8 @@ body.ready #clip { visibility: visible; }
 
 .ov { position: absolute; pointer-events: none; }
 .ov-cover { overflow: hidden; }
-.ov-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ov-cover img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.ov-boardInner img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .ov-char { height: auto; }
 .ov-flowers { inset: 0; }
 .ov-flower { position: absolute; width: auto; }
@@ -67,10 +68,37 @@ body.ready #clip { visibility: visible; }
 }
 .ov-station {
   color: var(--sky-5); background: var(--white); border: calc(var(--u) * .08) solid var(--ink);
-  font-size: calc(var(--u) * .7); white-space: nowrap;
+  font-size: calc(var(--u) * .62); white-space: nowrap; line-height: 1;
 }
 .ov-ballot { color: var(--sky-5); font-size: calc(var(--u) * .74); line-height: 1.3; word-break: keep-all; padding: 0 calc(var(--u) * .15); }
-.ov-donateNote { color: var(--white); font-size: calc(var(--u) * .72); line-height: 1.15; padding: 0 calc(var(--u) * .5); transform: rotate(-3deg); }
+/* 小額捐款紅便條（D51）：放大約 2 倍、輕微呼吸閃爍 */
+.ov-donateNote {
+  overflow: visible; color: var(--white); background: var(--red-1);
+  font-size: calc(var(--u) * 1.15); line-height: 1.15; letter-spacing: .05em;
+  border: calc(var(--u) * .08) solid var(--red-0);
+  box-shadow: calc(var(--u) * .15) calc(var(--u) * .2) 0 rgba(35, 37, 46, .35);
+  transform: rotate(-3deg);
+  animation: note-breathe 2.4s ease-in-out infinite;
+}
+.ov-donateNote .pin {
+  position: absolute; top: calc(var(--u) * -.35); left: 50%; margin-left: calc(var(--u) * -.35);
+  width: calc(var(--u) * .7); height: calc(var(--u) * .7); border-radius: 50%;
+  background: var(--yellow-0); border: calc(var(--u) * .08) solid var(--ink);
+}
+@keyframes note-breathe {
+  50% { transform: rotate(-3deg) scale(1.06); box-shadow: calc(var(--u) * .15) calc(var(--u) * .2) 0 rgba(35, 37, 46, .35), 0 0 calc(var(--u) * .9) calc(var(--u) * .2) rgba(255, 224, 138, .85); }
+}
+/* 背板上方標題（D48） */
+.ov-title { color: var(--sky-5); font-size: calc(var(--u) * 1.22); line-height: 1.3; word-break: keep-all; letter-spacing: .03em; }
+/* 辦公桌桌牌（D49）：木框、白底深字 */
+.ov-nameplate {
+  background: var(--white); color: var(--ink);
+  border: calc(var(--u) * .28) solid var(--wood-2); outline: calc(var(--u) * .08) solid var(--wood-0);
+  box-shadow: 0 calc(var(--u) * .2) 0 rgba(35, 37, 46, .35);
+  gap: calc(var(--u) * .05); line-height: 1.1; white-space: nowrap;
+}
+.ov-nameplate .np-small { font-size: calc(var(--u) * .66); color: var(--ink-2); }
+.ov-nameplate .np-big { font-size: calc(var(--u) * 1.3); letter-spacing: .25em; margin-right: -.25em; }
 .ov-flowerSign {
   background: var(--white); color: var(--red-0); border: calc(var(--u) * .1) solid var(--ink);
   font-size: calc(var(--u) * .8); white-space: nowrap; gap: calc(var(--u) * .1); height: auto !important; padding: calc(var(--u) * .25) 0;
@@ -141,6 +169,9 @@ body.debug .pb-spot { outline: 2px dashed #f0f; background: rgba(255, 0, 255, .1
 .bubble { font-size: 16px; width: max-content; transition: opacity .4s; }
 .bubble p { margin: 0; }
 .bubble.fade { opacity: 0; }
+/* 手機：泡泡放在凱勛左邊、政見板下方，尾巴朝右指向凱勛 */
+.bubble.bubble-side { transform: none; width: auto; padding: 5px 8px; font-size: 14px; line-height: 1.3; overflow: hidden; }
+.bubble.bubble-side::after { left: auto; right: -9px; bottom: auto; top: 40%; margin: 0; border: 6px solid transparent; border-left-color: var(--ink); border-right: 0; }
 .bless-card {
   border-color: var(--red-0); box-shadow: inset 0 0 0 2px var(--yellow-1), 0 3px 0 rgba(35, 37, 46, .35);
   font-size: 20px; color: var(--red-0); padding: 12px 18px; width: max-content; max-width: min(340px, calc(100vw - 16px));
@@ -188,7 +219,7 @@ body[data-layout="mobile"] #hud > .catalog-btn { top: 6px; right: 6px; min-heigh
 }
 .tool:active { background: var(--ink-2); }
 .tool-ico { width: 28px; height: 28px; background: center / contain no-repeat; image-rendering: pixelated; }
-.lai-face { background: url("../assets/sprites/char-lai.png") 0 0 / 56px auto no-repeat; }
+.lai-face { background: url("../assets/scene/lai-idle.png") 50% 4% / 150% auto no-repeat; image-rendering: auto; border-radius: 50%; }
 
 :focus-visible { outline: 3px solid var(--sky-4); outline-offset: 2px; }
 .tool:focus-visible, .hud-btn:focus-visible { outline-color: var(--yellow-1); }
@@ -307,14 +338,27 @@ dl.faq dd { margin: 0; }
 .pb-station { color: var(--sky-5); background: var(--white); border: 1px solid var(--ink); font-size: clamp(8px, 1.5cqw, 17px); line-height: 1; }
 .pb-figure { container-type: inline-size; }
 .pb-spot {
-  position: absolute; padding: 0; margin: 0; border: 0; border-radius: 8px; background: transparent; cursor: pointer;
-  transition: box-shadow .15s, background-color .15s;
+  position: absolute; padding: 0; margin: 0; cursor: pointer;
+  /* D52：常駐像素虛線框＋小標籤＋輕微閃爍 */
+  border: 3px dashed var(--yellow-1); border-radius: 0;
+  box-shadow: 0 0 0 1px var(--ink), inset 0 0 0 1px var(--ink);
+  background: rgba(255, 255, 255, .06);
+  animation: spot-blink 1.8s steps(2) infinite;
+  transition: background-color .15s, box-shadow .15s;
+}
+@keyframes spot-blink { 50% { border-color: var(--white); } }
+.pb-short {
+  position: absolute; left: 50%; top: -3px; transform: translate(-50%, -100%);
+  font: 13px/1 var(--pixel); color: var(--white); background: var(--ink); padding: 3px 6px; white-space: nowrap;
+  pointer-events: none;
 }
 .pb-spot:hover, .pb-spot:focus-visible, .pb-spot.active {
-  background: rgba(255, 255, 255, .2);
-  box-shadow: 0 0 0 3px rgba(255, 224, 138, .95), 0 0 20px 6px rgba(255, 224, 138, .6);
+  animation: none; border-style: solid; border-color: var(--yellow-1);
+  background: rgba(255, 255, 255, .28);
+  box-shadow: 0 0 0 1px var(--ink), 0 0 20px 6px rgba(255, 224, 138, .7);
   outline: none;
 }
+.pb-spot.active .pb-short, .pb-spot:hover .pb-short { background: var(--red-0); }
 .pb-spot:focus-visible { box-shadow: 0 0 0 3px var(--sky-4), 0 0 0 6px var(--yellow-1); }
 .pb-tip {
   position: absolute; transform: translate(-50%, calc(-100% - 8px)); pointer-events: none; z-index: 2;
@@ -358,6 +402,6 @@ dl.faq dd { margin: 0; }
 
 /* ───── 減少動態 ───── */
 @media (prefers-reduced-motion: reduce) {
-  .arrow, .tag-flash, .toast, .bless-card, .ov-flower, .talk-policy { animation: none !important; }
+  .arrow, .tag-flash, .toast, .bless-card, .ov-flower, .talk-policy, .ov-donateNote, .pb-spot { animation: none !important; }
   .hot, .pb-spot, .bubble, .loader-bar { transition: none; }
 }

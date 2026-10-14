@@ -9,6 +9,8 @@
     assets/scene/policyboard.webp/.jpg    政見板放大圖
     assets/scene/flower-a|b|c.png         去背花籃（送花籃時疊上去）
     assets/scene/cat.png、kid.png          去背大頭像（對話畫面、舊場景補位）
+    assets/scene/lai-idle.png、lai-talk.png 小賴桌面以上（D46，兩格用同一個裁切框）
+    assets/scene/board-inner.webp/.jpg     板橋版政見板的畫框內畫面（D53，疊進場景政見板）
     assets/cover-kai.jpg                  背板封面照
     assets/photo-kai.jpg                  資料卡真人照（寬 ≤ 480、≤ 200KB）
 """
@@ -128,9 +130,42 @@ def build_chars():
         print(f"{name}: {img.size} {s // KB}KB")
 
 
+def build_lai():
+    """char-lai 兩格（待機／說話）：同一裁切框，只取桌面以上（原圖 y < LAI_CUT_Y）。"""
+    LAI_CUT_Y = 465  # 原圖座標：筆電螢幕上緣、桌面以上
+    src = Image.open(RAW / "char-lai.jpg")
+    halves = [src.crop((i * src.width // 2, 0, (i + 1) * src.width // 2, LAI_CUT_Y)) for i in range(2)]
+    keyed = [key_green(h) for h in halves]
+    boxes = []
+    for k in keyed:
+        a = np.asarray(k)[..., 3] > 128
+        rows = np.where(a.sum(axis=1) >= 6)[0]
+        cols = np.where(a.sum(axis=0) >= 6)[0]
+        boxes.append((cols[0], rows[0], cols[-1] + 1, k.height))
+    box = (min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), LAI_CUT_Y)
+    h = 300
+    for name, k in zip(("idle", "talk"), keyed):
+        img = k.crop(box)
+        img = img.resize((round(img.width * h / img.height), h), Image.LANCZOS)
+        s = save_png(img, OUT / f"lai-{name}.png")
+        print(f"lai-{name}: {img.size} {s // KB}KB")
+
+
+def build_board_inner():
+    """板橋版政見板畫框內的畫面（policyboard 圖的 x 4.5–95.6%、y 12–90.8%）。"""
+    src = Image.open(OUT / "policyboard.jpg").convert("RGB")
+    W, H = src.size
+    img = src.crop((round(W * .045), round(H * .12), round(W * .956), round(H * .908)))
+    img = resize_w(img, 960)
+    _, sw = save_under(img, OUT / "board-inner.webp", "WEBP", 150 * KB, method=6)
+    _, sj = save_under(img, OUT / "board-inner.jpg", "JPEG", 200 * KB, optimize=True, progressive=True)
+    print(f"board-inner: {img.size} webp {sw // KB}KB jpg {sj // KB}KB")
+
+
 TASKS = {
     "scene": build_scene, "policyboard": build_policyboard, "cover": build_cover,
     "photo": build_photo, "flowers": build_flowers, "chars": build_chars,
+    "lai": build_lai, "boardinner": build_board_inner,
 }
 
 if __name__ == "__main__":

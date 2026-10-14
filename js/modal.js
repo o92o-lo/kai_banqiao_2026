@@ -1,7 +1,7 @@
 // 彈窗系統：一個 <dialog>，開啟時焦點移入，關閉時回到原物件；Esc、✕、點背景都能關
 import { h } from './util.js';
 
-let dialog, titleEl, subEl, bodyEl, footEl, opener = null;
+let dialog, titleEl, subEl, bodyEl, footEl, opener = null, onCloseFn = null;
 
 export function initModal() {
   dialog = document.getElementById('modal');
@@ -14,6 +14,9 @@ export function initModal() {
   dialog.addEventListener('click', (e) => { if (e.target === dialog) closeModal(); });
   dialog.addEventListener('close', () => {
     document.body.classList.remove('modal-open');
+    const fn = onCloseFn;
+    onCloseFn = null;
+    if (fn) fn();
     const back = opener;
     opener = null;
     if (back && document.contains(back) && back.offsetParent !== null) back.focus();
@@ -22,8 +25,11 @@ export function initModal() {
 
 // openModal({ title, sub, body: Node|Node[], foot: Node|Node[] }, openerEl)
 // variant：'wide'＝政見板大圖、'talk'＝角色對話
-export function openModal({ title, sub = '', body = [], foot = [], variant = '' }, from = document.activeElement) {
+// onClose：彈窗關掉時呼叫（換到別的彈窗內容時不會呼叫，關掉才會）
+export function openModal({ title, sub = '', body = [], foot = [], variant = '', onClose = null }, from = document.activeElement) {
   if (!dialog.open) opener = from instanceof HTMLElement ? from : null;
+  if (onCloseFn && onCloseFn !== onClose) { const fn = onCloseFn; onCloseFn = null; fn(); }
+  onCloseFn = onClose;
   dialog.className = variant ? `modal-${variant}` : '';
   titleEl.textContent = title;
   subEl.textContent = sub;

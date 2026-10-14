@@ -22,7 +22,8 @@ export function profileContent(data) {
   const p = data.profile || {};
   return [
     h('div', { class: 'profile-head' },
-      h('img', { class: 'photo', src: p.photo_url || 'assets/photo-kai.jpg', alt: `${p.name || ''}照片`, loading: 'lazy' }),
+      // photo_url 要是網址才用（Sheet 上可能填「（先留空）」之類的說明文字）
+      h('img', { class: 'photo', src: /^https?:\/\//.test(p.photo_url || '') ? p.photo_url : 'assets/photo-kai.jpg', alt: `${p.name || ''}照片`, loading: 'lazy' }),
       pixelFace(),
       h('div', {},
         h('p', { class: 'pf-name' }, p.name || ''),
@@ -42,23 +43,39 @@ export function openProfile(data) {
   openModal({ title: '候選人資料', body: [...profileContent(data), ...socialContent(data)] });
 }
 
-// 每 bubble_seconds 秒換一句；{days} 換成倒數天數
+// 桌牌（D49）：nameplate_text 原樣顯示；最後一段（通常是名字）放大
+export function renderNameplate(el, text) {
+  if (!el) return;
+  const t = (text || '').trim();
+  const i = Math.max(t.lastIndexOf(' '), t.lastIndexOf('　'));
+  el.replaceChildren(...(i > 0
+    ? [h('span', { class: 'np-small' }, t.slice(0, i)), h('span', { class: 'np-big' }, t.slice(i + 1))]
+    : [h('span', { class: 'np-big' }, t)]));
+}
+
+// 每 bubble_seconds 秒換一句；{days} 換成倒數天數。每次都讀 data.lines（後台資料回來會更新）
 export function startBubble(data, el, onChange = () => {}) {
-  const lines = data.lines || [];
-  if (!lines.length) { el.hidden = true; return; }
-  const sec = Math.max(3, Number(data.settings.bubble_seconds) || 6);
-  const days = daysUntil(data.settings.vote_date);
-  const fill = (t) => t.replaceAll('{days}', days ?? '');
-  let i = 0;
   const text = el.querySelector('.bubble-text');
-  text.textContent = fill(lines[0]);
-  el.hidden = false;
-  onChange();
-  if (lines.length < 2) return;
-  setInterval(() => {
-    i = (i + 1) % lines.length;
-    if (reducedMotion()) { text.textContent = fill(lines[i]); onChange(); return; }
-    el.classList.add('fade');
-    setTimeout(() => { text.textContent = fill(lines[i]); onChange(); el.classList.remove('fade'); }, 400);
-  }, sec * 1000);
+  let i = 0;
+  const show = () => {
+    const lines = data.lines || [];
+    if (!lines.length) { el.hidden = true; return; }
+    const days = daysUntil(data.settings.vote_date);
+    text.textContent = lines[i % lines.length].replaceAll('{days}', days ?? '');
+    el.hidden = false;
+    onChange();
+  };
+  const tick = () => {
+    i += 1;
+    if (reducedMotion()) show();
+    else {
+      el.classList.add('fade');
+      setTimeout(() => { show(); el.classList.remove('fade'); }, 400);
+    }
+    const sec = Math.max(3, Number(data.settings.bubble_seconds) || 6);
+    setTimeout(tick, sec * 1000);
+  };
+  show();
+  setTimeout(tick, Math.max(3, Number(data.settings.bubble_seconds) || 6) * 1000);
+  return show; // 後台資料更新後呼叫，立刻換成新內容
 }

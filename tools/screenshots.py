@@ -6,6 +6,7 @@
 
 手機尺寸用 Playwright 裝置模擬（viewport＋deviceScaleFactor＋觸控），PROJECT.md D28。
 瀏覽器用本機安裝的 Edge（channel="msedge"），不需另外下載。
+送花籃的 POST 會被攔下來回假資料，不會寫進正式 Sheet（讀取 bootstrap 照常打後台）。
 """
 import argparse
 import json
@@ -60,6 +61,14 @@ def run(url, out_dir):
                 is_mobile=s["mobile"], has_touch=s["mobile"], locale="zh-TW",
             )
             page = ctx.new_page()
+            # 攔下送花籃（POST），避免截圖測試寫進正式的「花籃紀錄」
+            def fake_post(route):
+                if route.request.method == "POST":
+                    route.fulfill(status=200, content_type="application/json",
+                                  body=json.dumps({"blessing": "（測試）凱勛加油！", "variant": "a", "count": 3}, ensure_ascii=False))
+                else:
+                    route.continue_()
+            page.route("**/macros/s/**", fake_post)
             errors = []
             page.on("pageerror", lambda e: errors.append(str(e)))
             page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
@@ -96,6 +105,17 @@ def run(url, out_dir):
                 page.screenshot(path=str(out_dir / f"shot-{s['name']}-cat.png"))
                 page.keyboard.press("Escape")
                 page.wait_for_timeout(200)
+            # 連送 3 盆後的畫面（桌機 1366）
+            if s["name"] == "1366x768":
+                for _ in range(3):
+                    page.click(".hot-flowers")
+                    page.wait_for_timeout(350)
+                page.wait_for_timeout(500)
+                page.screenshot(path=str(out_dir / f"shot-{s['name']}-flowers3.png"))
+                page.click(".hot-flowers")  # 第 4 盆：應該被擋
+                page.wait_for_timeout(300)
+                info["fourthBlocked"] = page.evaluate("[...document.querySelectorAll('.bless-card')].some(c => c.textContent.includes('太快'))")
+                info["flowersShown"] = page.evaluate("[...document.querySelectorAll('.ov-flower')].map(i => i.src.slice(-5, -4)).join('')")
             info["errors"] = errors
             report[s["name"]] = info
             print(s["name"], json.dumps(info, ensure_ascii=False))
