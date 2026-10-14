@@ -106,7 +106,9 @@ async function askAi(raw) {
     const r = await postChat(text, history);
     if (!r || r.error || !r.answer) throw new Error((r && r.error) || 'empty');
     state.history.push({ role: 'user', text }, { role: 'assistant', text: r.answer });
-    state.log.push({ kind: 'lai', text: r.answer, sources: r.sources || [] });
+    // 模型偶爾回 <br>，換成真正的換行（D70）
+    const text2 = String(r.answer).replace(/<br\s*\/?>/gi, '\n');
+    state.log.push({ kind: 'lai', text: text2, sources: r.sources || [] });
     renderLog();
   } catch (err) {
     console.info('小賴暫時沒辦法回答：', err.message || err);
