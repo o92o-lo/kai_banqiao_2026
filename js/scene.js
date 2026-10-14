@@ -8,7 +8,7 @@ export const DEBUG = new URLSearchParams(location.search).get('debug') === '1';
 
 const TOPBAR = 44;   // 手機頂部細條高（px）
 const TOOLBAR_H = 68; // 手機底部工具列高（px）
-const MAX_FLOWERS = 2; // D63：背景圖已畫 4 盆，畫面總數最多 6 盆
+const MAX_FLOWERS = 5; // D69：背景圖已畫 4 盆，畫面總數最多 9 盆
 
 let stage, clip, world, hud, tag, onAction;
 let mode = null;
@@ -296,7 +296,8 @@ export function addFlower() {
   const v = 'abc'[flowerCount % 3];
   const slot = slots[flowerCount];
   const img = h('img', { class: `ov-flower${reducedMotion() ? '' : ' pop'}`, src: `assets/scene/flower-${v}.png`, alt: '', draggable: 'false' });
-  Object.assign(img.style, { left: `${slot.x}%`, top: `${slot.y}%`, height: `${slot.h}%` });
+  // 越前面（y 越大）的花籃蓋在後面的上面
+  Object.assign(img.style, { left: `${slot.x}%`, top: `${slot.y}%`, height: `${slot.h}%`, zIndex: String(Math.round(slot.y)) });
   flowerLayer.append(img);
   flowerCount += 1;
 }
