@@ -21,8 +21,10 @@ export function initModal() {
 }
 
 // openModal({ title, sub, body: Node|Node[], foot: Node|Node[] }, openerEl)
-export function openModal({ title, sub = '', body = [], foot = [] }, from = document.activeElement) {
+// variant：'wide'＝政見板大圖、'talk'＝角色對話
+export function openModal({ title, sub = '', body = [], foot = [], variant = '' }, from = document.activeElement) {
   if (!dialog.open) opener = from instanceof HTMLElement ? from : null;
+  dialog.className = variant ? `modal-${variant}` : '';
   titleEl.textContent = title;
   subEl.textContent = sub;
   subEl.hidden = !sub;

@@ -2,12 +2,28 @@
 import { h, daysUntil, reducedMotion } from '../util.js';
 import { openModal } from '../modal.js';
 import { socialContent } from './bulletin.js';
+import { SCENE } from '../scene.js';
+
+// 像素頭像：直接從場景圖裁凱勛那一塊（layout.js 的 kaiFace）
+function pixelFace() {
+  const r = SCENE.kaiFace;
+  const el = h('div', { class: 'avatar', 'aria-hidden': 'true' });
+  if (!r) return el;
+  Object.assign(el.style, {
+    backgroundImage: `url(${SCENE.src}.jpg)`,
+    backgroundSize: `${(100 / r.w) * 100}% auto`,
+    backgroundPosition: `${(r.x / (100 - r.w)) * 100}% ${(r.y / (100 - r.h)) * 100}%`,
+    aspectRatio: `${(r.w * SCENE.w) / (r.h * SCENE.h)}`,
+  });
+  return el;
+}
 
 export function profileContent(data) {
   const p = data.profile || {};
   return [
     h('div', { class: 'profile-head' },
-      h('div', { class: 'avatar', 'aria-hidden': 'true' }),
+      h('img', { class: 'photo', src: p.photo_url || 'assets/photo-kai.jpg', alt: `${p.name || ''}照片`, loading: 'lazy' }),
+      pixelFace(),
       h('div', {},
         h('p', { class: 'pf-name' }, p.name || ''),
         p.identity ? h('p', { class: 'pf-id' }, p.identity) : null,
@@ -27,7 +43,7 @@ export function openProfile(data) {
 }
 
 // 每 bubble_seconds 秒換一句；{days} 換成倒數天數
-export function startBubble(data, el) {
+export function startBubble(data, el, onChange = () => {}) {
   const lines = data.lines || [];
   if (!lines.length) { el.hidden = true; return; }
   const sec = Math.max(3, Number(data.settings.bubble_seconds) || 6);
@@ -37,11 +53,12 @@ export function startBubble(data, el) {
   const text = el.querySelector('.bubble-text');
   text.textContent = fill(lines[0]);
   el.hidden = false;
+  onChange();
   if (lines.length < 2) return;
   setInterval(() => {
     i = (i + 1) % lines.length;
-    if (reducedMotion()) { text.textContent = fill(lines[i]); return; }
+    if (reducedMotion()) { text.textContent = fill(lines[i]); onChange(); return; }
     el.classList.add('fade');
-    setTimeout(() => { text.textContent = fill(lines[i]); el.classList.remove('fade'); }, 400);
+    setTimeout(() => { text.textContent = fill(lines[i]); onChange(); el.classList.remove('fade'); }, 400);
   }, sec * 1000);
 }

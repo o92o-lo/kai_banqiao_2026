@@ -1,11 +1,11 @@
-// 大背板：標語、倒數；投票資訊彈窗（號次牌也用這個）
+// 大背板：封面照（圖）＋倒數紅布條（D42）；投票資訊彈窗（號次牌也用這個）
 import { h, daysUntil, shortDate, longDate } from '../util.js';
 import { openModal } from '../modal.js';
 
 // 手機頂部細條用的短版
 export function countdownShort(s) {
   const n = daysUntil(s.vote_date);
-  return n == null ? '' : `距投票 ${n} 天`;
+  return n == null ? '' : `距離投票 ${n} 天`;
 }
 
 export function countdownText(s) {
@@ -18,13 +18,8 @@ export function ballotText(s) {
   return s.ballot_number ? `凱勛 ${s.ballot_number} 號` : s.ballot_placeholder || '';
 }
 
-export function renderBackdrop(data, box) {
-  const s = data.settings;
-  box.replaceChildren(
-    h('p', { class: 'bd-main' }, s.slogan_main || ''),
-    h('p', { class: 'bd-sub' }, s.slogan_sub || ''),
-    h('p', { class: 'bd-count' }, countdownText(s)),
-  );
+export function renderBanner(data, el) {
+  if (el) el.textContent = countdownText(data.settings);
 }
 
 export function voteContent(data) {
@@ -38,6 +33,7 @@ export function voteContent(data) {
   return [
     h('p', { class: 'big-count' }, countdownText(s)),
     h('dl', { class: 'info' }, rows.map(([k, v]) => [h('dt', {}, k), h('dd', {}, v)])),
+    s.vote_reminder ? h('p', { class: 'reminder' }, s.vote_reminder) : null,
   ];
 }
 

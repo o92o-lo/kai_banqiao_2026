@@ -1,137 +1,103 @@
-// 桌機／手機兩組座標。只有資料，沒有邏輯。
-// 單位＝邏輯像素。k＝放大倍數（手機版 2 倍）。
-// sprite 尺寸由 tools/pixelize.py 產生（見 assets/raw/qa/sprite-sizes.json）。
+// 場景設定：一張完整背景圖＋透明熱區（D40）。只有資料，沒有邏輯。
+// 座標一律是「相對背景圖的百分比」：x、y＝左上角，w、h＝寬高（0–100）。
+// 換背景圖：tools/build_assets.py 產生 assets/scene/scene-<名稱>.webp/.jpg，
+// 在 SCENES 加一組（可先複製再用 ?debug=1 對位），改 ACTIVE_SCENE 即可。
 
-export const SPRITES = {
-  'bg-desktop':      { w: 480, h: 270 },
-  'obj-bulletin':    { w: 96, h: 60 },
-  'obj-backdrop':    { w: 148, h: 72 },
-  'obj-policyboard': { w: 128, h: 67 },
-  'icon-transit':    { w: 32, h: 27 },
-  'icon-family':     { w: 32, h: 30 },
-  'icon-elder':      { w: 23, h: 32 },
-  'icon-pet':        { w: 32, h: 28 },
-  'icon-tourism':    { w: 32, h: 30 },
-  'icon-housing':    { w: 29, h: 32 },
-  'obj-desk':        { w: 65, h: 48 },
-  'char-kai':        { w: 33, h: 48, frames: 2, anim: 'blink' },
-  'obj-teatable':    { w: 95, h: 64 },
-  'obj-cup':         { w: 9, h: 12 },
-  'obj-snack':       { w: 14, h: 12 },
-  'char-lai':        { w: 36, h: 41, frames: 2, anim: 'talk' },
-  'obj-flower-a':    { w: 25, h: 48 },
-  'obj-flower-b':    { w: 22, h: 48 },
-  'obj-flower-c':    { w: 22, h: 48 },
-  'obj-welcome':     { w: 63, h: 44 },
-  'obj-flyers':      { w: 14, h: 12 },
-  'obj-numbersign':  { w: 25, h: 36 },
-  'char-cat':        { w: 28, h: 17, frames: 2, anim: 'breathe' },
-  'char-kid':        { w: 21, h: 28, frames: 2, anim: 'play' },
-  'obj-sidedesk':    { w: 47, h: 40 },
-};
+export const ACTIVE_SCENE = 'p0';
 
-// 可點物件。label＝滑鼠移入標籤（01-spec §3.3），ariaLabel 給讀屏。
-// parts：由哪些 sprite 組成（相對座標）；w/h：可點範圍。
-// 陣列順序＝Tab 順序。
-export const OBJECTS = {
-  bulletin:    { action: 'bulletin', label: '最新行程・小額捐款', ariaLabel: '布告欄：活動行程與小額捐款', w: 96, h: 60, parts: [{ sprite: 'obj-bulletin', x: 0, y: 0 }], arrow: true },
-  backdrop:    { action: 'vote', label: '投票倒數・投票資訊', ariaLabel: '大背板：投票倒數與投票資訊', w: 148, h: 72, parts: [{ sprite: 'obj-backdrop', x: 0, y: 0 }], arrow: true },
-  policyboard: { action: 'policyIndex', label: '看看我的政見', ariaLabel: '政見板：理想板橋，看所有政見', w: 128, h: 67, parts: [{ sprite: 'obj-policyboard', x: 0, y: 0 }], arrow: true },
-  'icon-elder':   { action: 'policy:elder', label: '看看我的政見', policy: 'elder', w: 23, h: 32, parts: [{ sprite: 'icon-elder', x: 0, y: 0 }] },
-  'icon-housing': { action: 'policy:housing', label: '看看我的政見', policy: 'housing', w: 29, h: 32, parts: [{ sprite: 'icon-housing', x: 0, y: 0 }] },
-  'icon-tourism': { action: 'policy:tourism', label: '看看我的政見', policy: 'tourism', w: 32, h: 30, parts: [{ sprite: 'icon-tourism', x: 0, y: 0 }] },
-  'icon-family':  { action: 'policy:family', label: '看看我的政見', policy: 'family', w: 32, h: 30, parts: [{ sprite: 'icon-family', x: 0, y: 0 }] },
-  'icon-transit': { action: 'policy:transit', label: '看看我的政見', policy: 'transit', w: 32, h: 27, parts: [{ sprite: 'icon-transit', x: 0, y: 0 }] },
-  'icon-pet':     { action: 'policy:pet', label: '看看我的政見', policy: 'pet', w: 32, h: 28, parts: [{ sprite: 'icon-pet', x: 0, y: 0 }] },
-  desk:        { action: 'profile', label: '候選人資料', ariaLabel: '凱勛辦公桌：候選人資料', w: 65, h: 84, parts: [{ sprite: 'char-kai', x: 16, y: 0 }, { sprite: 'obj-desk', x: 0, y: 36 }], arrow: true },
-  cat:         { action: 'policy:pet', label: '毛孩友善政見', ariaLabel: '打盹的貓：毛孩友善政見', w: 28, h: 17, parts: [{ sprite: 'char-cat', x: 0, y: 0 }], zzz: true },
-  lai:         { action: 'lai', label: '跟小賴聊聊', ariaLabel: '小賴：虛擬服務處助理，常見問題', w: 36, h: 41, parts: [{ sprite: 'char-lai', x: 0, y: 0 }], arrow: true },
-  cup:         { action: 'tea:cup', label: '喝杯茶吧', ariaLabel: '茶杯', w: 16, h: 16, parts: [{ sprite: 'obj-cup', x: 3, y: 2 }] },
-  snack:       { action: 'tea:snack', label: '喝杯茶吧', ariaLabel: '點心', w: 16, h: 16, parts: [{ sprite: 'obj-snack', x: 1, y: 2 }] },
-  kid:         { action: 'policy:family', label: '親子友善政見', ariaLabel: '玩積木的小孩：親子友善政見', w: 21, h: 28, parts: [{ sprite: 'char-kid', x: 0, y: 0 }] },
-  flowers:     { action: 'flower', label: '送花籃祝福凱勛', ariaLabel: '花籃區：送花籃祝福凱勛', w: 117, h: 84, parts: [], arrow: true },
-  flyers:      { action: 'downloads', label: '下載文宣', ariaLabel: '文宣：下載文宣', w: 16, h: 16, parts: [{ sprite: 'obj-flyers', x: 1, y: 2 }], arrow: true },
-  numbersign:  { action: 'vote', label: '投票資訊', ariaLabel: '號次牌：投票資訊', w: 25, h: 36, parts: [{ sprite: 'obj-numbersign', x: 0, y: 0 }] },
-  sidedesk:    { action: 'downloads', label: '下載文宣', ariaLabel: '邊桌：下載文宣', w: 47, h: 40, parts: [{ sprite: 'obj-sidedesk', x: 0, y: 0 }] },
-};
-
-// 花籃位置（相對花籃區）；一開始放 3 個，送一次多一個，最多 5 個
-export const FLOWER_SLOTS = [
-  { x: 4, y: 4 }, { x: 26, y: 12 }, { x: 48, y: 20 }, { x: 70, y: 28 }, { x: 92, y: 36 },
+// 可點區。label＝滑鼠移入標籤（01-spec §3.3、附錄 A）；陣列順序＝Tab 順序。
+// mobile: true 的才出現在手機版裁切畫面。
+export const HOTSPOTS = [
+  { id: 'bulletin', action: 'bulletin', label: '最新行程・小額捐款', ariaLabel: '布告欄：活動行程與小額捐款', arrow: true },
+  { id: 'backdrop', action: 'vote', label: '投票倒數・投票資訊', ariaLabel: '大背板：投票倒數與投票資訊', arrow: true },
+  { id: 'policyboard', action: 'policyboard', label: '看看我的政見', ariaLabel: '政見板：理想板橋，看所有政見', arrow: true, mobile: true },
+  { id: 'kai', action: 'profile', label: '候選人資料', ariaLabel: '凱勛：候選人資料', arrow: true, mobile: true },
+  { id: 'cat', action: 'cat', label: '擼一下貓', ariaLabel: '貓：擼一下貓（毛孩友善政見）', mobile: true },
+  { id: 'lai', action: 'lai', label: '跟小賴聊聊', ariaLabel: '小賴：虛擬服務處助理，常見問題', arrow: true },
+  { id: 'cup', action: 'tea:cup', label: '喝杯茶吧', ariaLabel: '茶杯' },
+  { id: 'cup2', action: 'tea:cup', label: '喝杯茶吧', ariaLabel: '茶杯' },
+  { id: 'snack', action: 'tea:snack', label: '喝杯茶吧', ariaLabel: '點心' },
+  { id: 'kid', action: 'kid', label: '一起玩積木', ariaLabel: '小孩：一起玩積木（親子友善政見）' },
+  { id: 'flowers', action: 'flower', label: '送花籃祝福凱勛', ariaLabel: '花籃區：送花籃祝福凱勛', arrow: true },
+  { id: 'flyers', action: 'downloads', label: '下載文宣', ariaLabel: '歡迎桌文宣：下載文宣', arrow: true },
+  { id: 'numbersign', action: 'vote', label: '投票資訊', ariaLabel: '號次牌：投票資訊' },
+  { id: 'sidedesk', action: 'downloads', label: '下載文宣', ariaLabel: '邊桌：下載文宣' },
 ];
-export const FLOWER_SPRITES = ['obj-flower-a', 'obj-flower-b', 'obj-flower-c'];
 
-export const LAYOUTS = {
-  desktop: {
-    w: 480, h: 270, k: 1,
-    bg: { sprite: 'bg-desktop', x: 0, y: 0 },
-    decor: [
-      { sprite: 'obj-teatable', x: 192, y: 138 },
-      { sprite: 'obj-welcome', x: 14, y: 214 },
+export const SCENES = {
+  // P0 風格稿（P0 v2 到之前的暫用版）。P0 裡沒有貓、小孩、板橋版政見板，所以貓和小孩用疊圖補上
+  p0: {
+    src: 'assets/scene/scene-p0', // .webp＋.jpg
+    w: 1920, h: 1072,
+    wall: '#C0DDFB', floor: '#F3E6D5',
+    hotspots: {
+      bulletin:    { x: 14.2, y: 6.7, w: 14.4, h: 19.7 },
+      backdrop:    { x: 35.9, y: 7.5, w: 28.2, h: 37.5 },
+      policyboard: { x: 72.6, y: 5.1, w: 23.8, h: 25.7 },
+      kai:         { x: 74.7, y: 32.2, w: 18.0, h: 37.3 },
+      cat:         { x: 82.0, y: 70.5, w: 7.3, h: 8.3 },
+      lai:         { x: 52.3, y: 41.0, w: 7.1, h: 17.3 },
+      cup:         { x: 39.8, y: 63.3, w: 3.5, h: 5.2 },
+      cup2:        { x: 53.2, y: 58.6, w: 3.5, h: 5.0 },
+      snack:       { x: 48.4, y: 63.5, w: 5.1, h: 6.0 },
+      kid:         { x: 68.8, y: 69.0, w: 4.2, h: 10.5 },
+      flowers:     { x: 0.5, y: 22.9, w: 16.9, h: 56.9 },
+      flyers:      { x: 3.5, y: 79.0, w: 18.5, h: 10.0 },
+      numbersign:  { x: 24.1, y: 85.1, w: 6.4, h: 13.8 },
+      sidedesk:    { x: 76.3, y: 85.8, w: 16.4, h: 14.2 },
+    },
+    // 疊加物
+    cover:  { x: 35.9, y: 7.5, w: 28.2, h: 35.4, focus: '52% 50%' }, // 背板白色區域
+    banner: { x: 37.0, y: 38.4, w: 26.0, h: 4.4 },                   // 倒數紅布條（背板下緣）
+    plaque: { x: 79.6, y: 3.6, w: 9.8, h: 3.2 },                     // 「理想板橋」木牌
+    station: null,                                                   // P0 的政見板沒有車站；P0 v2 再填
+    ballot: { x: 24.9, y: 86.6, w: 4.3, h: 8.6 },                    // 號次牌牌面
+    donateNote: { x: 19.8, y: 14.0, w: 2.9, h: 5.1 },                // 布告欄紅便條
+    flowerSign: { x: 1.0, y: 18.2, w: 12.0, h: 3.6 },                // 「送花籃祝福凱勛」小牌（計數 ≥10 時多一行）
+    bubble: { x: 85.2, y: 31.5 },                                    // 凱勛泡泡的錨點（頭頂）
+    kaiFace: { x: 81.0, y: 32.0, w: 8.6, h: 17.5 },                  // 資料卡像素頭像取這塊
+    // 新花籃疊放位置（x、y＝左上角；h＝高，寬依圖比例）。最多 6 個
+    flowerSlots: [
+      { x: 15.5, y: 33, h: 27 }, { x: 12, y: 43, h: 27 }, { x: 19.5, y: 40, h: 27 },
+      { x: 8.5, y: 52, h: 27 }, { x: 16, y: 50, h: 27 }, { x: 23, y: 47, h: 27 },
     ],
-    objects: {
-      bulletin: { x: 52, y: 14 },
-      backdrop: { x: 166, y: 34 },
-      policyboard: { x: 344, y: 12 },
-      'icon-elder': { x: 354, y: 16 },
-      'icon-housing': { x: 397, y: 15 },
-      'icon-tourism': { x: 437, y: 17 },
-      'icon-family': { x: 351, y: 46 },
-      'icon-transit': { x: 395, y: 49 },
-      'icon-pet': { x: 437, y: 48 },
-      desk: { x: 390, y: 92 },
-      cat: { x: 404, y: 180 },
-      lai: { x: 221, y: 118 },
-      cup: { x: 207, y: 160 },
-      snack: { x: 253, y: 162 },
-      kid: { x: 298, y: 190 },
-      flowers: { x: 8, y: 104 },
-      flyers: { x: 23, y: 210 },
-      numbersign: { x: 86, y: 222 },
-      sidedesk: { x: 424, y: 224 },
+    // 原圖沒畫的角色用去背圖補上（P0 v2 已畫好就設成 {}）
+    overlays: {
+      cat: { src: 'assets/scene/cat.png', x: 82.0, y: 70.5, w: 7.3 },
+      kid: { src: 'assets/scene/kid.png', x: 68.8, y: 69.0, w: 4.2 },
     },
-    // HTML 文字疊在圖上（01-spec §2.4）
-    texts: {
-      backdrop: { x: 184, y: 38, w: 112, h: 62 },
-      donateNote: { x: 60, y: 19, w: 25, h: 33 },
-      notes: [{ x: 109, y: 21, w: 14, h: 15 }, { x: 92, y: 44, w: 14, h: 14 }, { x: 119, y: 41, w: 15, h: 13 }],
-      plaque: { x: 386, y: 9, w: 44, h: 10 },
-      station: { x: 382, y: 40, w: 14, h: 8 },
-      ballot: { x: 88, y: 225, w: 21, h: 19 },
-      flowerSign: { x: 24, y: 94, w: 54, h: 10 },
-      flowerCount: { x: 4, y: 190, w: 110, h: 8 },
-    },
+    // 手機版裁切（政見板＋凱勛辦公桌＋貓）
+    mobileCrop: { x: 70, y: 0, w: 30, h: 80 },
   },
-  mobile: {
-    w: 270, h: 480, k: 2,
-    // P1 局部特寫：取背景右半邊（避開窗戶）放大 2 倍
-    bg: { sprite: 'bg-desktop', x: -670, y: 0 },
-    decor: [],
-    objects: {
-      policyboard: { x: 7, y: 28 },
-      'icon-elder': { x: 27, y: 36 },
-      'icon-housing': { x: 113, y: 34 },
-      'icon-tourism': { x: 193, y: 38 },
-      'icon-family': { x: 21, y: 96 },
-      'icon-transit': { x: 109, y: 102 },
-      'icon-pet': { x: 193, y: 100 },
-      desk: { x: 70, y: 226 },
-      cat: { x: 196, y: 392 },
-    },
-    texts: {
-      plaque: { x: 91, y: 22, w: 88, h: 20 },
-      station: { x: 83, y: 84, w: 28, h: 16 },
-    },
-    topbar: 22,
-    toolbar: 48,
-  },
+};
+
+// 政見板放大圖（D43）。熱區＝圖中 6 個元素，座標相對 policyboard 圖
+export const POLICY_BOARD = {
+  src: 'assets/scene/policyboard', // .webp＋.jpg
+  w: 1600, h: 837,
+  plaque: { x: 40.6, y: 1.5, w: 18.8, h: 8.2 },
+  station: { x: 45.9, y: 43.0, w: 8.2, h: 3.9 },
+  spots: [
+    { code: 'transit', x: 44.0, y: 67.5, w: 15.5, h: 10.0 },
+    { code: 'family',  x: 8.0,  y: 70.5, w: 18.5, h: 17.5 },
+    { code: 'elder',   x: 16.6, y: 56.0, w: 5.6,  h: 13.5 },
+    { code: 'pet',     x: 66.6, y: 79.0, w: 6.6,  h: 10.5 },
+    { code: 'tourism', x: 68.0, y: 44.5, w: 19.0, h: 26.0 },
+    { code: 'housing', x: 50.4, y: 17.0, w: 17.0, h: 27.0 },
+  ],
 };
 
 // 手機底部工具列（01-spec §3.2）
 export const TOOLBAR = [
-  { action: 'bulletin', text: '行程・捐款' },
-  { action: 'vote', text: '投票資訊' },
-  { action: 'lai', text: '跟小賴聊', icon: 'char-lai' },
-  { action: 'flower', text: '送花籃' },
-  { action: 'downloads', text: '文宣' },
+  { action: 'bulletin', text: '行程・捐款', icon: 'obj-bulletin' },
+  { action: 'vote', text: '投票資訊', icon: 'obj-numbersign' },
+  { action: 'lai', text: '跟小賴聊', icon: 'lai' },
+  { action: 'flower', text: '送花籃', icon: 'obj-flower-a' },
+  { action: 'downloads', text: '文宣', icon: 'obj-flyers' },
 ];
+
+// 角色對話畫面的預設台詞（Sheet 網站設定 cat_greeting／kid_greeting 沒填時用；多句用｜分隔）
+export const GREETING_DEFAULTS = {
+  cat: '喵～｜（貓咪蹭了蹭你的手）',
+  kid: '哈囉！要不要一起玩積木？',
+};

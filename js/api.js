@@ -31,6 +31,16 @@ export async function bootstrap() {
   }
 }
 
+// POST 一律用 text/plain，避免 CORS 預檢（06 §3.2）
+async function post(body, ms) {
+  if (!API_URL) throw new Error('API_URL 未設定');
+  return fetchJson(API_URL, ms, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
+}
+
+export function flower() {
+  return post({ action: 'flower', client: clientId() }, 8000);
+}
+
 // 每個瀏覽器一個隨機 ID；讀不到 localStorage 就每次新產生
 export function clientId() {
   const make = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));

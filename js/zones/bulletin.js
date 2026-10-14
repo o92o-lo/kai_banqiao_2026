@@ -1,5 +1,5 @@
-// 布告欄：便條（小額捐款＋最近 3 場行程）；彈窗三個分頁
-import { h, shortDate, longDate, taipeiToday } from '../util.js';
+// 布告欄：紅便條「小額捐款」；彈窗三個分頁
+import { h, longDate, taipeiToday } from '../util.js';
 import { openModal, tabs } from '../modal.js';
 
 export function upcoming(data) {
@@ -7,18 +7,13 @@ export function upcoming(data) {
   return (data.events || []).filter((e) => !e.date || e.date >= today);
 }
 
-export function renderNotes(data, donateEl, noteEls) {
-  donateEl.textContent = '小額捐款';
-  const list = upcoming(data).slice(0, noteEls.length);
-  noteEls.forEach((el, i) => {
-    const e = list[i];
-    el.replaceChildren(...(e ? [h('b', {}, shortDate(e.date)), h('span', {}, e.title)] : []));
-  });
+export function renderDonateNote(el) {
+  if (el) el.textContent = '小額捐款';
 }
 
 export function eventsContent(data) {
   const list = upcoming(data);
-  if (!list.length) return [h('p', { class: 'empty' }, '目前沒有公開的行程。')];
+  if (!list.length) return [h('p', { class: 'empty' }, '近期行程整理中，歡迎先追蹤 FB／IG！'), ...socialContent(data)];
   return [h('ol', { class: 'events' }, list.map((e) => h('li', {},
     h('p', { class: 'ev-when' }, longDate(e.date), e.start ? `　${e.start}${e.end ? `–${e.end}` : ''}` : ''),
     h('p', { class: 'ev-title' }, e.title),

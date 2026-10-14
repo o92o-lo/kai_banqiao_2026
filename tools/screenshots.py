@@ -29,12 +29,15 @@ CHECK_JS = """() => {
   const vw = innerWidth, vh = innerHeight;
   const doc = document.documentElement;
   const out = { scroll: doc.scrollWidth > vw || doc.scrollHeight > vh, offscreen: [], overlaps: [], small: [] };
-  const btns = [...document.querySelectorAll('#scene .obj:not([hidden])')];
+  const btns = [...document.querySelectorAll('#world .hot:not([hidden])')];
   const rects = btns.map(b => [b.dataset.id, b.getBoundingClientRect()]);
   for (const [id, r] of rects) {
     if (r.left < -1 || r.top < -1 || r.right > vw + 1 || r.bottom > vh + 1) out.offscreen.push(id);
     if (r.width < 24 || r.height < 24) out.small.push(`${id} ${Math.round(r.width)}×${Math.round(r.height)}`);
   }
+  // 黑帶檢查：畫面四角與上下中點不能是 body 的深色底
+  const stage = getComputedStyle(document.getElementById('stage')).backgroundImage;
+  out.bands = stage.includes('gradient') ? 'wall/floor' : 'NONE';
   for (const b of document.querySelectorAll('#hud button, #hud nav')) {
     const r = b.getBoundingClientRect();
     if (r.width && (r.left < -1 || r.top < -1 || r.right > vw + 1 || r.bottom > vh + 1)) out.offscreen.push(b.className);
@@ -74,13 +77,25 @@ def run(url, out_dir):
             page.keyboard.press("Enter")
             page.wait_for_timeout(200)
             opened = page.evaluate("document.getElementById('modal').open")
-            if s["name"] == "1366x768":
-                page.screenshot(path=str(out_dir / f"shot-{s['name']}-modal.png"))
             page.keyboard.press("Escape")
             page.wait_for_timeout(200)
             closed = not page.evaluate("document.getElementById('modal').open")
             back = page.evaluate("document.activeElement.dataset.id || document.activeElement.className")
             info["keyboard"] = {"firstTab": first, "enterOpens": opened, "escCloses": closed, "focusBack": back == first}
+            # 政見板放大、貓對話各一張（桌機 1366 與 iPhone 15）
+            if s["name"] in ("1366x768", "393x852-iphone-15"):
+                page.click(".hot-policyboard")
+                page.wait_for_timeout(400)
+                page.click(".pb-spot >> nth=0")
+                page.wait_for_timeout(500)
+                page.screenshot(path=str(out_dir / f"shot-{s['name']}-policyboard.png"))
+                page.keyboard.press("Escape")
+                page.wait_for_timeout(200)
+                page.click(".hot-cat")
+                page.wait_for_timeout(2600)
+                page.screenshot(path=str(out_dir / f"shot-{s['name']}-cat.png"))
+                page.keyboard.press("Escape")
+                page.wait_for_timeout(200)
             info["errors"] = errors
             report[s["name"]] = info
             print(s["name"], json.dumps(info, ensure_ascii=False))
@@ -95,7 +110,7 @@ def main():
     ap.add_argument("--out", default=str(QA))
     args = ap.parse_args()
     report = run(args.url, Path(args.out))
-    bad = [k for k, v in report.items() if v["scroll"] or v["offscreen"] or v["errors"] or not all(v["keyboard"].values())]
+    bad = [k for k, v in report.items() if v["scroll"] or v["offscreen"] or v["errors"] or v["bands"] == 'NONE' or not all(v["keyboard"].values())]
     sys.exit(1 if bad else 0)
 
 

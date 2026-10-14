@@ -1,71 +1,71 @@
-// 場景：依 layout.js 建物件、縮放、版面切換（只換座標不重載）、滑鼠移入標籤、HUD 浮動文字
-import { SPRITES, OBJECTS, LAYOUTS, FLOWER_SLOTS, FLOWER_SPRITES, TOOLBAR } from './layout.js';
+// 場景：一張背景圖＋透明熱區（D40）。桌機顯示整張；手機裁切政見板＋辦公桌＋貓，上下用牆色／地板色補滿（D45）。
+// 熱區與疊加物都用百分比放在 #world 裡，跟著圖一起縮放。HUD（標籤、泡泡）在不縮放的另一層。
+import { ACTIVE_SCENE, SCENES, HOTSPOTS, TOOLBAR } from './layout.js';
 import { h, reducedMotion } from './util.js';
 
-const SPRITE_DIR = 'assets/sprites/';
+export const SCENE = SCENES[ACTIVE_SCENE];
+export const DEBUG = new URLSearchParams(location.search).get('debug') === '1';
 
-let scene, hud, tag, onAction;
+const TOPBAR = 44;   // 手機頂部細條高（px）
+const TOOLBAR_H = 68; // 手機底部工具列高（px）
+const MAX_FLOWERS = 6;
+
+let stage, clip, world, hud, tag, onAction;
 let mode = null;
-let scale = 1, origin = { x: 0, y: 0 };
-const objEls = {};          // id → button
-const textEls = {};         // name → element（notes 是陣列）
-const decorEls = { desktop: [], mobile: [] };
-let flowerCount = 3;
+let worldRect = { x: 0, y: 0, w: 1, h: 1 };
+const spots = {};      // id → button
+const texts = {};      // name → 疊加文字元素
+const overlayEls = {}; // id → 補上的角色圖
+let flowerLayer, flowerCount = 0;
 let suppressClick = false;
 
-export const ui = {};       // HUD 元素，給 main 用：bubble、topbar 欄位等
+export const ui = {};  // HUD 元素：bubble、topbar、toolbar、catalogBtn、live
 
-export function spriteUrl(name) {
-  return `${SPRITE_DIR}${name}.png`;
-}
-
-export function allSpriteUrls() {
-  return Object.keys(SPRITES).map(spriteUrl);
-}
-
-// 一個 sprite＝一個 span，背景圖；多格的用 background-position 切換
-function spriteEl(name, extraClass = '') {
-  const s = SPRITES[name];
-  const el = h('span', { class: `sprite ${s.anim ? `anim-${s.anim}` : ''} ${extraClass}`.trim(), 'aria-hidden': 'true' });
-  el.style.backgroundImage = `url(${spriteUrl(name)})`;
-  el.dataset.sprite = name;
+function pct(el, r) {
+  el.style.left = `${r.x}%`;
+  el.style.top = `${r.y}%`;
+  if (r.w != null) el.style.width = `${r.w}%`;
+  if (r.h != null) el.style.height = `${r.h}%`;
   return el;
 }
 
-// left/top 已是場景座標（px）；k 只放大圖本身
-function sizeSprite(el, left, top, k) {
-  const s = SPRITES[el.dataset.sprite];
-  const f = s.frames || 1;
-  Object.assign(el.style, {
-    left: `${left}px`, top: `${top}px`,
-    width: `${s.w * k}px`, height: `${s.h * k}px`,
-    backgroundSize: `${s.w * f * k}px ${s.h * k}px`,
-  });
-  el.style.setProperty('--sw', `${s.w * k}px`);
+export function pictureEl(src, cls, alt = '') {
+  return h('picture', { class: cls },
+    h('source', { type: 'image/webp', srcset: `${src}.webp` }),
+    h('img', { src: `${src}.jpg`, alt, draggable: 'false', decoding: 'async' }));
 }
 
-function place(el, r) {
-  Object.assign(el.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, height: `${r.h}px` });
-}
+function buildWorld() {
+  world.append(pictureEl(SCENE.src, 'scene-img'));
 
-function buildObjects() {
-  for (const [id, def] of Object.entries(OBJECTS)) {
-    const btn = h('button', {
-      type: 'button',
-      class: `obj obj-${id}${def.policy ? ' obj-icon' : ''}`,
-      'aria-label': def.ariaLabel || def.label,
-      'data-id': id,
-    });
-    btn._parts = def.parts.map((p) => {
-      const sp = spriteEl(p.sprite);
-      btn.append(sp);
-      return { el: sp, ...p };
-    });
-    if (def.arrow) btn.append(h('span', { class: 'arrow', 'aria-hidden': 'true' }));
-    if (def.zzz) btn.append(h('span', { class: 'zzz', 'aria-hidden': 'true' }, 'Z', h('span', {}, 'z'), h('span', {}, 'z')));
+  if (SCENE.cover) {
+    const c = pct(h('div', { class: 'ov ov-cover', 'aria-hidden': 'true' },
+      h('img', { src: 'assets/cover-kai.jpg', alt: '', draggable: 'false' })), SCENE.cover);
+    c.firstChild.style.objectPosition = SCENE.cover.focus || '50% 50%';
+    world.append(c);
+  }
+  for (const name of ['banner', 'plaque', 'station', 'ballot', 'donateNote', 'flowerSign']) {
+    if (!SCENE[name]) continue;
+    texts[name] = pct(h('div', { class: `ov ov-text ov-${name}`, 'aria-hidden': 'true' }), SCENE[name]);
+    world.append(texts[name]);
+  }
+  for (const [id, o] of Object.entries(SCENE.overlays || {})) {
+    overlayEls[id] = pct(h('img', { class: `ov ov-char ov-${id}`, src: o.src, alt: '', draggable: 'false' }), { x: o.x, y: o.y, w: o.w });
+    world.append(overlayEls[id]);
+  }
+  flowerLayer = h('div', { class: 'ov ov-flowers', 'aria-hidden': 'true' });
+  world.append(flowerLayer);
 
-    btn.addEventListener('click', (e) => {
-      if (suppressClick) { suppressClick = false; e.preventDefault(); return; }
+  for (const def of HOTSPOTS) {
+    const r = SCENE.hotspots[def.id];
+    if (!r) continue;
+    const btn = pct(h('button', {
+      type: 'button', class: `hot hot-${def.id}`, 'aria-label': def.ariaLabel || def.label, 'data-id': def.id,
+    }, def.arrow ? h('span', { class: 'arrow', 'aria-hidden': 'true' }) : null,
+       DEBUG ? h('span', { class: 'debug-id' }, def.id) : null), r);
+    btn._def = def;
+    btn.addEventListener('click', () => {
+      if (suppressClick) { suppressClick = false; return; }
       hideTag();
       onAction(def.action, btn);
     });
@@ -74,13 +74,9 @@ function buildObjects() {
     btn.addEventListener('focus', () => { if (btn.matches(':focus-visible')) showTag(btn); });
     btn.addEventListener('blur', hideTag);
     addLongPress(btn);
-    objEls[id] = btn;
+    spots[def.id] = btn;
+    world.append(btn);
   }
-  // 花籃區：花籃是動態加的
-  objEls.flowers._flowers = h('span', { class: 'flower-set', 'aria-hidden': 'true' });
-  objEls.flowers.prepend(objEls.flowers._flowers);
-  // Tab 順序＝OBJECTS 順序
-  scene.append(...Object.values(objEls));
 }
 
 // 手機：長按顯示標籤
@@ -99,199 +95,134 @@ function addLongPress(btn) {
   btn.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
-function buildTexts() {
-  const t = (name, cls) => (textEls[name] = h('div', { class: `stext ${cls}`, 'aria-hidden': 'true' }));
-  t('backdrop', 'st-backdrop');
-  t('donateNote', 'st-donate');
-  textEls.notes = [0, 1, 2].map(() => h('div', { class: 'stext st-note', 'aria-hidden': 'true' }));
-  t('plaque', 'st-plaque');
-  t('station', 'st-station');
-  t('ballot', 'st-ballot');
-  t('flowerSign', 'st-flowersign');
-  t('flowerCount', 'st-flowercount');
-  for (const [name, el] of Object.entries(textEls)) {
-    if (name === 'notes') scene.append(...el);
-    else scene.append(el);
-  }
-}
-
-function buildDecor() {
-  for (const m of ['desktop', 'mobile']) {
-    for (const d of LAYOUTS[m].decor) {
-      const el = spriteEl(d.sprite, 'decor');
-      el._pos = d;
-      decorEls[m].push(el);
-      scene.prepend(el);
-    }
-  }
-  ui.bg = spriteEl('bg-desktop', 'bg');
-  scene.prepend(ui.bg);
+function toolIcon(icon) {
+  if (icon === 'lai') return h('span', { class: 'tool-ico lai-face', 'aria-hidden': 'true' });
+  const el = h('span', { class: 'tool-ico', 'aria-hidden': 'true' });
+  el.style.backgroundImage = `url(assets/sprites/${icon}.png)`;
+  return el;
 }
 
 function buildHud() {
   tag = h('div', { class: 'tag', role: 'tooltip', hidden: true });
-  ui.bubble = h('div', { class: 'bubble', hidden: true, 'aria-live': 'off' }, h('p', { class: 'bubble-text' }));
+  ui.bubble = h('div', { class: 'bubble', hidden: true }, h('p', { class: 'bubble-text' }));
   ui.catalogBtn = h('button', { type: 'button', class: 'hud-btn catalog-btn', onclick: (e) => onAction('catalog', e.currentTarget) },
     h('span', { class: 'ico-menu', 'aria-hidden': 'true' }), '目錄');
-  ui.topbar = h('div', { class: 'topbar' },
-    h('p', { class: 'tb-count' }), h('p', { class: 'tb-ballot' }));
+  ui.topbar = h('div', { class: 'topbar' }, h('p', { class: 'tb-count' }), h('p', { class: 'tb-ballot' }));
   ui.toolbar = h('nav', { class: 'toolbar', 'aria-label': '功能' }, TOOLBAR.map((b) => h('button', {
     type: 'button', class: 'tool', onclick: (e) => onAction(b.action, e.currentTarget),
-  }, b.icon ? h('span', { class: 'tool-ico lai-face', 'aria-hidden': 'true' }) : h('span', { class: `tool-ico ico-${b.action}`, 'aria-hidden': 'true' }), h('span', {}, b.text))));
+  }, toolIcon(b.icon), h('span', {}, b.text))));
   ui.live = h('div', { class: 'sr-only', 'aria-live': 'polite' });
   hud.append(ui.bubble, ui.topbar, ui.toolbar, ui.catalogBtn, tag, ui.live);
-}
-
-export function initScene(handler) {
-  onAction = handler;
-  scene = document.getElementById('scene');
-  hud = document.getElementById('hud');
-  buildDecor();
-  buildObjects();
-  buildTexts();
-  buildHud();
-  renderFlowers(flowerCount);
-  layout();
-  window.addEventListener('resize', layout);
-  window.visualViewport?.addEventListener('resize', layout);
-}
-
-export function getText(name) { return textEls[name]; }
-export function getMode() { return mode; }
-
-function layout() {
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const next = vw / vh >= 1 ? 'desktop' : 'mobile';
-  if (next !== mode) applyMode(next);
-  const L = LAYOUTS[mode];
-  let s = Math.min(vw / L.w, vh / L.h);
-  if (s >= 3) s = Math.floor(s); // 3 倍以上取整數，像素銳利
-  scale = s;
-  origin = { x: Math.round((vw - L.w * s) / 2), y: Math.round((vh - L.h * s) / 2) };
-  Object.assign(scene.style, {
-    width: `${L.w}px`, height: `${L.h}px`,
-    transform: `translate(${origin.x}px, ${origin.y}px) scale(${s})`,
-  });
-  document.documentElement.style.setProperty('--s', s);
-  positionHud();
-}
-
-function applyMode(m) {
-  mode = m;
-  const L = LAYOUTS[m];
-  const k = L.k;
-  document.body.dataset.layout = m;
-  scene.style.setProperty('--k', k);
-  hideTag();
-
-  sizeSprite(ui.bg, L.bg.x, L.bg.y, k);
-
-  for (const mm of ['desktop', 'mobile']) {
-    for (const el of decorEls[mm]) {
-      el.hidden = mm !== m;
-      if (mm === m) sizeSprite(el, el._pos.x, el._pos.y, k);
-    }
-  }
-
-  for (const [id, btn] of Object.entries(objEls)) {
-    const pos = L.objects[id];
-    btn.hidden = !pos;
-    if (!pos) continue;
-    const def = OBJECTS[id];
-    btn._rect = { x: pos.x, y: pos.y, w: def.w * k, h: def.h * k };
-    place(btn, btn._rect);
-    for (const p of btn._parts) sizeSprite(p.el, p.x * k, p.y * k, k);
-  }
-  if (!objEls.flowers.hidden) renderFlowers(flowerCount);
-
-  for (const [name, el] of Object.entries(textEls)) {
-    const els = name === 'notes' ? el : [el];
-    const rects = L.texts[name];
-    els.forEach((e, i) => {
-      const r = Array.isArray(rects) ? rects[i] : rects;
-      e.hidden = !r;
-      if (r) place(e, r);
+  if (DEBUG) {
+    ui.debug = h('div', { class: 'debug-readout' }, '?debug=1');
+    hud.append(ui.debug);
+    window.addEventListener('pointermove', (e) => {
+      const x = ((e.clientX - worldRect.x) / worldRect.w) * 100;
+      const y = ((e.clientY - worldRect.y) / worldRect.h) * 100;
+      ui.debug.textContent = `x ${x.toFixed(1)}%  y ${y.toFixed(1)}%`;
     });
   }
 }
 
-// HUD（不縮放的那層）：標籤、泡泡、目錄鈕、手機上下列
-function toScreen(x, y) {
-  return { x: origin.x + x * scale, y: origin.y + y * scale };
+export function initScene(handler) {
+  onAction = handler;
+  stage = document.getElementById('stage');
+  clip = document.getElementById('clip');
+  world = document.getElementById('world');
+  hud = document.getElementById('hud');
+  document.body.classList.toggle('debug', DEBUG);
+  buildWorld();
+  buildHud();
+  layout();
+  window.addEventListener('resize', layout);
 }
 
-function positionHud() {
-  const L = LAYOUTS[mode];
-  const W = L.w * scale, H = L.h * scale;
+export function getText(name) { return texts[name] || null; }
+export function getMode() { return mode; }
+
+function layout() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  mode = vw / vh >= 1 ? 'desktop' : 'mobile';
+  document.body.dataset.layout = mode;
   const mobile = mode === 'mobile';
+  const crop = mobile ? SCENE.mobileCrop : { x: 0, y: 0, w: 100, h: 100 };
+  const area = mobile ? { y: TOPBAR, w: vw, h: vh - TOPBAR - TOOLBAR_H } : { y: 0, w: vw, h: vh };
+
+  const cw = (crop.w / 100) * SCENE.w, ch = (crop.h / 100) * SCENE.h;
+  const s = Math.min(area.w / cw, area.h / ch);
+  const box = { w: Math.round(cw * s), h: Math.round(ch * s) };
+  box.x = Math.round((vw - box.w) / 2);
+  box.y = Math.round(area.y + (area.h - box.h) / 2);
+  Object.assign(clip.style, { left: `${box.x}px`, top: `${box.y}px`, width: `${box.w}px`, height: `${box.h}px` });
+
+  const W = SCENE.w * s, H = SCENE.h * s;
+  const wx = -(crop.x / 100) * W, wy = -(crop.y / 100) * H;
+  Object.assign(world.style, { width: `${W}px`, height: `${H}px`, left: `${wx}px`, top: `${wy}px` });
+  world.style.setProperty('--u', `${W / 100}px`);
+  worldRect = { x: box.x + wx, y: box.y + wy, w: W, h: H };
+
+  // 上下補色：裁切框中線以上牆色、以下地板色（D45：不能有黑帶）
+  const mid = box.y + box.h / 2;
+  stage.style.background = `linear-gradient(to bottom, ${SCENE.wall} ${mid}px, ${SCENE.floor} ${mid}px)`;
+
+  for (const [id, btn] of Object.entries(spots)) {
+    btn.hidden = mobile && !btn._def.mobile;
+    if (overlayEls[id]) overlayEls[id].hidden = btn.hidden;
+  }
   ui.topbar.hidden = !mobile;
   ui.toolbar.hidden = !mobile;
-  if (mobile) {
-    Object.assign(ui.topbar.style, { left: `${origin.x}px`, top: `${origin.y}px`, width: `${W}px`, height: `${L.topbar * scale}px` });
-    Object.assign(ui.toolbar.style, { left: `${origin.x}px`, top: `${origin.y + (L.h - L.toolbar) * scale}px`, width: `${W}px`, height: `${L.toolbar * scale}px` });
-    const barH = L.topbar * scale;
-    Object.assign(ui.catalogBtn.style, { left: '', right: `${window.innerWidth - origin.x - W + 4}px`, top: `${origin.y + (barH - Math.max(barH - 4, 28)) / 2}px`, height: `${Math.max(barH - 4, 28)}px` });
-  } else {
-    Object.assign(ui.catalogBtn.style, { left: '', right: `${window.innerWidth - origin.x - W + 8}px`, top: `${origin.y + 8}px`, height: '' });
-  }
+  hideTag();
   positionBubble();
-  if (!tag.hidden && tag._for) showTag(tag._for);
+}
+
+// 背景圖百分比座標 → 螢幕 px
+function toScreen(xPct, yPct) {
+  return { x: worldRect.x + (xPct / 100) * worldRect.w, y: worldRect.y + (yPct / 100) * worldRect.h };
 }
 
 function positionBubble() {
-  const desk = objEls.desk;
-  if (!desk || desk.hidden) return;
-  const kai = desk._parts[0];
-  const k = LAYOUTS[mode].k;
-  const r = desk._rect;
-  const cx = r.x + (kai.x + SPRITES['char-kai'].w / 2) * k;
-  const p = toScreen(cx, r.y + kai.y * k);
-  const maxW = Math.min(mode === 'mobile' ? LAYOUTS[mode].w * scale - 24 : 280, window.innerWidth - 16);
+  if (!SCENE.bubble) return;
+  const p = toScreen(SCENE.bubble.x, SCENE.bubble.y);
+  const maxW = Math.min(mode === 'mobile' ? window.innerWidth - 24 : 320, window.innerWidth - 16);
   ui.bubble.style.maxWidth = `${maxW}px`;
-  ui.bubble.style.left = `${p.x}px`;
-  ui.bubble.style.top = `${p.y - 4}px`;
+  ui.bubble.style.top = `${p.y - 6}px`;
   clampX(ui.bubble, p.x);
 }
 
-// 讓浮動框不超出畫面左右（以中心點 cx 為準）
+// 浮動框不超出畫面左右（cx＝中心點）
 function clampX(el, cx) {
   const w = el.offsetWidth;
   const min = 8 + w / 2, max = window.innerWidth - 8 - w / 2;
   el.style.left = `${Math.max(min, Math.min(max, cx))}px`;
 }
 
-function objScreenTop(btn) {
-  const r = btn._rect;
-  return toScreen(r.x + r.w / 2, r.y);
+function spotTop(btn) {
+  const r = btn.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top };
+}
+
+function placeAbove(el, btn) {
+  const p = spotTop(btn);
+  el.style.top = `${Math.max(mode === 'mobile' ? TOPBAR + 4 : 4, p.y - 8)}px`;
+  clampX(el, p.x);
 }
 
 function showTag(btn) {
-  const def = OBJECTS[btn.dataset.id];
-  tag.textContent = def.label;
+  tag.textContent = btn._def.label;
   tag.hidden = false;
-  tag._for = btn;
-  const p = objScreenTop(btn);
-  tag.style.top = `${Math.max(4, p.y - 6)}px`;
-  clampX(tag, p.x);
+  placeAbove(tag, btn);
 }
 
-function hideTag() {
-  tag.hidden = true;
-  tag._for = null;
-}
+function hideTag() { tag.hidden = true; }
 
-// 手機第一次進站：全部標籤閃現（政見圖示除外，避免 6 個一樣的字擠在一起）
+// 手機第一次進站：可見熱區的標籤全部閃現
 export function flashLabels(ms = 3000) {
-  const tags = Object.values(objEls)
-    .filter((b) => !b.hidden && !b.classList.contains('obj-icon'))
-    .map((b) => {
-      const t = h('div', { class: 'tag tag-flash', 'aria-hidden': 'true' }, OBJECTS[b.dataset.id].label);
-      hud.append(t);
-      const p = objScreenTop(b);
-      t.style.top = `${Math.max(4, p.y - 6)}px`;
-      clampX(t, p.x);
-      return t;
-    });
+  const tags = Object.values(spots).filter((b) => !b.hidden).map((b) => {
+    const t = h('div', { class: 'tag tag-flash', 'aria-hidden': 'true' }, b._def.label);
+    hud.append(t);
+    placeAbove(t, b);
+    return t;
+  });
   setTimeout(() => tags.forEach((t) => t.remove()), ms);
 }
 
@@ -300,56 +231,48 @@ export function toast(text, btn, ms = 2500) {
   if (!text) return;
   const t = h('div', { class: 'toast' }, text);
   hud.append(t);
-  const p = objScreenTop(btn);
-  t.style.top = `${Math.max(4, p.y - 6)}px`;
-  clampX(t, p.x);
+  placeAbove(t, btn);
   ui.live.textContent = text;
   setTimeout(() => t.remove(), ms);
 }
 
-// 置中提示（第一次進站）；at＝'top'|'bottom'
 export function hint(text, ms = 3000) {
   const t = h('div', { class: 'hint' }, text);
   hud.append(t);
-  const L = LAYOUTS[mode];
-  const y = mode === 'mobile' ? (L.h - L.toolbar - 40) * scale : L.h * 0.42 * scale;
-  t.style.top = `${origin.y + y}px`;
-  clampX(t, origin.x + (L.w * scale) / 2);
+  const y = mode === 'mobile' ? window.innerHeight - TOOLBAR_H - 64 : worldRect.y + worldRect.h * 0.5;
+  t.style.top = `${y}px`;
+  clampX(t, window.innerWidth / 2);
   setTimeout(() => t.remove(), ms);
 }
 
-// 祝福卡：桌機在花籃區上方，手機從底部工具列上方彈出
-export function card(node, ms = 3200) {
-  const L = LAYOUTS[mode];
+// 祝福卡：桌機在花籃區上方，手機從工具列上方彈出
+export function card(node, ms = 3600) {
   const c = h('div', { class: `bless-card${mode === 'mobile' ? ' from-bottom' : ''}`, role: 'status' }, node);
   hud.append(c);
   if (mode === 'mobile') {
-    c.style.top = `${origin.y + (L.h - L.toolbar - 8) * scale}px`;
-    clampX(c, origin.x + (L.w * scale) / 2);
+    c.style.top = `${window.innerHeight - TOOLBAR_H - 12}px`;
+    clampX(c, window.innerWidth / 2);
   } else {
-    const p = objScreenTop(objEls.flowers);
+    const r = SCENE.hotspots.flowers;
+    const p = toScreen(r.x + r.w / 2 + 6, r.y);
     c.style.top = `${p.y}px`;
-    clampX(c, p.x + 20 * scale);
+    clampX(c, p.x);
   }
   setTimeout(() => c.remove(), ms);
 }
 
-export function renderFlowers(n, animateLast = false) {
-  flowerCount = Math.min(n, FLOWER_SLOTS.length);
-  const set = objEls.flowers._flowers;
-  const k = LAYOUTS[mode || 'desktop'].k;
-  set.replaceChildren();
-  for (let i = 0; i < flowerCount; i++) {
-    const el = spriteEl(FLOWER_SPRITES[i % FLOWER_SPRITES.length], animateLast && i === flowerCount - 1 && !reducedMotion() ? 'pop' : '');
-    sizeSprite(el, FLOWER_SLOTS[i].x * k, FLOWER_SLOTS[i].y * k, k);
-    set.append(el);
-  }
+// 送花籃：在花籃區旁疊一個新花籃（最多 6 個）
+export function addFlower(variant) {
+  const slots = SCENE.flowerSlots || [];
+  if (flowerCount >= Math.min(MAX_FLOWERS, slots.length)) return;
+  const v = /^[abc]$/.test(variant) ? variant : 'abc'[flowerCount % 3];
+  const slot = slots[flowerCount];
+  const img = h('img', { class: `ov-flower${reducedMotion() ? '' : ' pop'}`, src: `assets/scene/flower-${v}.png`, alt: '', draggable: 'false' });
+  Object.assign(img.style, { left: `${slot.x}%`, top: `${slot.y}%`, height: `${slot.h}%` });
+  flowerLayer.append(img);
+  flowerCount += 1;
 }
 
-export function addFlower() {
-  if (flowerCount < FLOWER_SLOTS.length) renderFlowers(flowerCount + 1, true);
-}
+export function announce(text) { ui.live.textContent = text; }
 
-export function announce(text) {
-  ui.live.textContent = text;
-}
+export { positionBubble };

@@ -1,65 +1,69 @@
-// 啟動：載入圖片與資料 → 建場景 → 填文字 → 綁動作
+// 啟動：載入背景圖與資料 → 建場景 → 填疊加文字 → 綁動作
 import { bootstrap } from './api.js';
 import { initModal } from './modal.js';
-import { initScene, getText, getMode, ui, allSpriteUrls, toast, hint, card, flashLabels, addFlower, announce } from './scene.js';
+import { initScene, SCENE, getText, getMode, ui, toast, hint, card, flashLabels, addFlower, announce, positionBubble } from './scene.js';
 import { storageGet, storageSet, h } from './util.js';
 import { openCatalog } from './catalog.js';
-import { renderNotes, openBulletin } from './zones/bulletin.js';
-import { renderBackdrop, openVote, countdownShort, ballotText } from './zones/backdrop.js';
-import { openPolicy, openPolicyIndex } from './zones/policy.js';
+import { renderDonateNote, openBulletin } from './zones/bulletin.js';
+import { renderBanner, openVote, countdownShort, ballotText } from './zones/backdrop.js';
+import { openPolicyBoard } from './zones/policy.js';
 import { openProfile, startBubble } from './zones/desk.js';
 import { openLai, teaLine } from './zones/teatable.js';
-import { sendFlower, blessingCard, flowerCountText } from './zones/flowers.js';
+import { openTalk } from './zones/characters.js';
+import { sendFlower, cooldownLeft, blessingCard, renderFlowerSign } from './zones/flowers.js';
 import { openDownloads } from './zones/welcome.js';
 
 const bar = document.querySelector('.loader-bar');
 
-function preload(urls) {
-  let done = 0;
-  return Promise.all(urls.map((u) => new Promise((resolve) => {
-    const img = new Image();
-    img.onload = img.onerror = () => {
-      done += 1;
-      bar.style.width = `${Math.round((done / urls.length) * 80)}%`;
-      resolve();
-    };
-    img.src = u;
-  })));
+// 等背景圖（瀏覽器會挑 webp 或 jpg）載完再顯示
+function loadScene() {
+  return new Promise((resolve) => {
+    const img = document.createElement('img');
+    const webp = document.createElement('canvas').toDataURL('image/webp').startsWith('data:image/webp');
+    img.onload = img.onerror = resolve;
+    img.src = `${SCENE.src}.${webp ? 'webp' : 'jpg'}`;
+    bar.style.width = '40%';
+  });
 }
 
 function fillTexts(data) {
   const s = data.settings;
-  renderBackdrop(data, getText('backdrop'));
-  renderNotes(data, getText('donateNote'), getText('notes'));
-  getText('plaque').textContent = '理想板橋';
-  getText('station').textContent = '板橋';
-  getText('ballot').textContent = ballotText(s);
-  getText('flowerSign').textContent = '送花籃祝福凱勛';
-  getText('flowerCount').textContent = flowerCountText(data.flowerCount ?? 0);
+  renderBanner(data, getText('banner'));
+  renderDonateNote(getText('donateNote'));
+  if (getText('plaque')) getText('plaque').textContent = '理想板橋';
+  if (getText('station')) getText('station').textContent = '板橋';
+  if (getText('ballot')) getText('ballot').textContent = ballotText(s);
+  renderFlowerSign(getText('flowerSign'), data.flowerCount ?? 0);
   ui.topbar.querySelector('.tb-count').textContent = countdownShort(s);
   ui.topbar.querySelector('.tb-ballot').textContent = ballotText(s);
 }
 
 function makeHandler(data) {
-  return (action, from) => {
+  let sending = false;
+  return async (action, from) => {
     const [name, arg] = action.split(':');
     switch (name) {
       case 'bulletin': return openBulletin(data);
       case 'vote': return openVote(data);
-      case 'policyIndex': return openPolicyIndex(data);
-      case 'policy': {
-        const via = from?.dataset.id === 'cat' ? 'pet' : from?.dataset.id === 'kid' ? 'kid' : 'board';
-        return openPolicy(data, arg, via);
-      }
+      case 'policyboard': return openPolicyBoard(data);
       case 'profile': return openProfile(data);
+      case 'cat': return openTalk(data, 'cat');
+      case 'kid': return openTalk(data, 'kid');
       case 'lai': return openLai(data);
       case 'tea': return toast(teaLine(data, arg), from);
       case 'flower': {
-        const r = sendFlower(data);
-        if (!r.ok) { announce(`${r.wait} 秒後可以再送一次`); return; }
-        if (getMode() === 'desktop') addFlower();
+        const wait = cooldownLeft(data);
+        if (wait || sending) { announce(`${wait || 1} 秒後可以再送一次`); return; }
+        sending = true;
+        if (getMode() === 'desktop') addFlower(null);
+        const r = await sendFlower(data);
+        sending = false;
         card(blessingCard(r.blessing));
         announce(r.blessing);
+        if (r.count != null) {
+          data.flowerCount = r.count;
+          renderFlowerSign(getText('flowerSign'), r.count);
+        }
         return;
       }
       case 'downloads': return openDownloads(data);
@@ -69,12 +73,12 @@ function makeHandler(data) {
 }
 
 async function start() {
-  const [data] = await Promise.all([bootstrap(), preload(allSpriteUrls())]);
+  const [data] = await Promise.all([bootstrap(), loadScene()]);
   bar.style.width = '100%';
   initModal();
   initScene(makeHandler(data));
   fillTexts(data);
-  startBubble(data, ui.bubble);
+  startBubble(data, ui.bubble, positionBubble);
   document.body.classList.add('ready');
   document.getElementById('loader').remove();
 
