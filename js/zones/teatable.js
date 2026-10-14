@@ -2,7 +2,8 @@
 import { h, pick } from '../util.js';
 
 export function faqContent(data, { buttons = true } = {}) {
-  const faq = data.faq || [];
+  // D71：button=false 只給小賴看，不在畫面上列出
+  const faq = (data.faq || []).filter((f) => f.button !== false);
   if (!buttons) {
     return h('dl', { class: 'faq' }, faq.map((f) => [
       h('dt', {}, f.q),

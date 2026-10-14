@@ -20,7 +20,7 @@ export function openCatalog(data) {
       section('活動行程', ...eventsContent(data)),
       section('小額捐款', ...donateContent(data)),
       section('文宣下載', ...downloadsContent(data)),
-      (data.faq || []).length ? section(`常見問題（${s.assistant_name || ''}）`, faqContent(data, { buttons: false })) : null,
+      (data.faq || []).some((f) => f.button !== false) ? section(`常見問題（${s.assistant_name || ''}）`, faqContent(data, { buttons: false })) : null,
     ].filter(Boolean),
   });
 }

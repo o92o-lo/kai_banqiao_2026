@@ -107,7 +107,8 @@ function buildBootstrap_() {
 
   var faq = rows_(ss, '常見問題').filter(enabled_)
     .sort(function (a, b) { return num_(a['排序']) - num_(b['排序']); })
-    .map(function (r) { return { q: str_(r['問題']), a: str_(r['回答']), source: str_(r['出處']) }; })
+    // D71：啟用＝是 都進小賴知識庫；「當按鈕」空白或「是」才在對話框顯示成按鈕，「否」＝只給小賴看
+    .map(function (r) { return { q: str_(r['問題']), a: str_(r['回答']), source: str_(r['出處']), button: str_(r['當按鈕']) !== '否' }; })
     .filter(function (f) { return f.q && f.a; });
 
   // 政見：依議題代號分組，點次排序；文字原樣

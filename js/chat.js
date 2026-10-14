@@ -30,7 +30,7 @@ export function openChat(data, actions, onClose) {
   const log = h('div', { class: 'chat-log', role: 'log', 'aria-live': 'polite', 'aria-label': '對話紀錄' });
   const thinking = h('p', { class: 'msg msg-lai msg-thinking', hidden: true }, THINKING_TEXT);
   const faq = h('div', { class: 'faq-buttons', role: 'group', 'aria-label': '常見問題' },
-    (data.faq || []).map((f) => h('button', { type: 'button', class: 'btn', onclick: () => askFaq(f) }, f.q)));
+    (data.faq || []).filter((f) => f.button !== false).map((f) => h('button', { type: 'button', class: 'btn', onclick: () => askFaq(f) }, f.q)));
 
   const input = h('textarea', {
     class: 'chat-input', rows: '2', maxlength: String(MAX_CHARS), 'aria-label': `問${s.assistant_name || '小賴'}問題`,
