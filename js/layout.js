@@ -43,7 +43,7 @@ export const SCENES = {
       cup:         { x: 39.8, y: 63.3, w: 3.5, h: 5.2 },
       cup2:        { x: 53.2, y: 58.6, w: 3.5, h: 5.0 },
       snack:       { x: 48.4, y: 63.5, w: 5.1, h: 6.0 },
-      kid:         { x: 63.3, y: 28.0, w: 8.0, h: 20.2 },
+      kid:         { x: 31.6, y: 35.2, w: 8.0, h: 20.2 },
       flowers:     { x: 0.5, y: 22.9, w: 16.9, h: 56.9 },
       flyers:      { x: 3.5, y: 79.0, w: 18.5, h: 10.0 },
       numbersign:  { x: 24.1, y: 85.1, w: 6.4, h: 13.8 },
@@ -71,13 +71,23 @@ export const SCENES = {
     // 疊在場景上的角色圖（P0 沒畫或要換掉的）。talk＝開聊天時換的圖
     overlays: {
       cat: { src: 'assets/scene/cat.png', x: 82.0, y: 70.5, w: 7.3 },
-      kid: { src: 'assets/scene/kid.png', x: 63.3, y: 28.0, w: 8.0 }, // D57：背板右側盆栽前
+      kid: { src: 'assets/scene/kid.png', x: 31.6, y: 35.2, w: 8.0 }, // D64：背板左側盆栽前、盆栽底部與茶桌左側椅子之間
       // 小賴（D46）：蓋住 P0 原本的小賴，下緣切齊茶桌桌面（y 58.3%）
       lai: { src: 'assets/scene/lai-idle.png', talk: 'assets/scene/lai-talk.png', x: 51.6, y: 41.5, w: 8.4 },
     },
     // 手機版裁切（政見板＋凱勛辦公桌＋貓）
     mobileCrop: { x: 70, y: 0, w: 30, h: 80 },
   },
+};
+
+// D58＋D65：拿掉 P0 小賴的背景（assets/raw/p0-scene-nolai.jpg）到了以後用這組：
+// 跑 `py -3 tools/build_assets.py scene` → 用 ?debug=1 檢查座標 → 把 ACTIVE_SCENE 改成 'p0nolai'。
+// 小賴移到茶桌後方「左邊那張空椅子」：身體在椅背前、桌面後，下緣切齊桌面（y 58.3%），大小不變
+SCENES.p0nolai = {
+  ...SCENES.p0,
+  src: 'assets/scene/scene-p0nolai',
+  hotspots: { ...SCENES.p0.hotspots, lai: { x: 40.8, y: 41.5, w: 8.4, h: 16.8 } },
+  overlays: { ...SCENES.p0.overlays, lai: { ...SCENES.p0.overlays.lai, x: 40.8, y: 41.5 } },
 };
 
 // 政見板放大圖（D43）。熱區＝圖中 6 個元素，座標相對 policyboard 圖
